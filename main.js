@@ -650,13 +650,7 @@ if(type==='chime') {
   if(!savedPosition || savedPosition.x!==g.position.x || savedPosition.z!==g.position.z) saveDecorationPosition(g);
   if(animate) { const baseY=g.position.y; g.scale.setScalar(.01); const start=performance.now(); const grow=now=>{ const p=Math.min((now-start)/480,1); g.scale.setScalar(1+(1-p)*.15); g.position.y=baseY+Math.sin(p*Math.PI)*.22; if(p<1) requestAnimationFrame(grow); else g.position.y=baseY; }; requestAnimationFrame(grow); }
 }
-// a welcoming starter scene
-function addStarterDecorations(){
-  addDecoration('flower',0,false,'친구에게 먼저 안부를 물었다','starter-flower');
-  addDecoration('book',1,false,'미뤄둔 책을 20쪽 읽었다','starter-book');
-}
-function addStoredDecorations(){ memories.forEach((m,i)=>addDecoration(m.decor,i+2,false,m.text,`memory-${m.date||i}`,m.flowerColor)); }
-addStarterDecorations();
+function addStoredDecorations(){ memories.forEach((m,i)=>addDecoration(m.decor,i,false,m.text,`memory-${m.date||i}`,m.flowerColor)); }
 addStoredDecorations();
 function settleGroundDecorations(){
   for(let pass=0;pass<5;pass++){
@@ -689,7 +683,6 @@ function clearPlacedDecorations(){
 }
 function rebuildDecorations(){
   clearPlacedDecorations();
-  addStarterDecorations();
   addStoredDecorations();
   settleGroundDecorations();
 }
