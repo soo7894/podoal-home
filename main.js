@@ -930,7 +930,7 @@ function formatMemoryTimestamp(value){
 }
 
 function renderRecords(){
-  const total = memories.length+2; countEl.innerHTML=`${String(total).padStart(2,'0')} <small>/ 31</small>`; progressFill.style.width=`${Math.min(total/31*100,100)}%`;
+  const total = memories.length; countEl.innerHTML=`${String(total).padStart(2,'0')} <small>/ 31</small>`; progressFill.style.width=`${Math.min(total/31*100,100)}%`;
   previewCount.textContent=`장식 ${String(total).padStart(2,'0')}개`;
   if(memories[0]) todayPreview.innerHTML=memories[0].text.replace(/(.{17})/g,'$1<br>');
   const shown = memories.slice(0,3).map(m=>`<li><span class="memory-dot ${m.decor}">${DECOR_INFO[m.decor]?.icon||'✦'}</span><div><b>${escapeHTML(m.text)}</b><small>${formatMemoryTimestamp(m.date)}</small></div></li>`).join('');
@@ -1092,7 +1092,14 @@ document.querySelector('#save-memory').addEventListener('click',()=>{
   const text=input.value.trim();
   if(!text){ input.focus(); input.placeholder='오늘의 잘한 일을 한 줄로 적어 주세요 :)'; return; }
   const flowerColor=selectedDecor==='flower'?randomFlowerColor():null;
-  const memory={text,decor:selectedDecor,date:new Date().toISOString(),flowerColor}; memories.unshift(memory); persistLocal(STORAGE_KEY,JSON.stringify(memories)); addDecoration(selectedDecor,memories.length+1,true,text,`memory-${memory.date}`,flowerColor); renderRecords(); input.value=''; closeModal(); toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),3600);
+  const memory={text,decor:selectedDecor,date:new Date().toISOString(),flowerColor};
+  memories.unshift(memory);
+  if(!streakStartDate){
+    streakStartDate=localDateString(new Date(memory.date));
+    persistLocal(STREAK_START_KEY,streakStartDate);
+    updateStreak();
+  }
+  persistLocal(STORAGE_KEY,JSON.stringify(memories)); addDecoration(selectedDecor,memories.length,true,text,`memory-${memory.date}`,flowerColor); renderRecords(); input.value=''; closeModal(); toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),3600);
 });
 input.addEventListener('keydown',e=>{ if(e.key==='Enter') document.querySelector('#save-memory').click(); });
 document.querySelector('#sound-button').addEventListener('click',e=>{ e.currentTarget.textContent=e.currentTarget.textContent==='♪'?'×':'♪'; });
