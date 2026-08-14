@@ -27,6 +27,8 @@ const houseNameText = document.querySelector('#house-name-text');
 const houseNameInput = document.querySelector('#house-name-input');
 const openHomeCaptureButton = document.querySelector('#open-home-capture');
 const shareHomeLinkButton = document.querySelector('#share-home-link');
+const resetHomeButton = document.querySelector('#reset-home');
+const soundButton = document.querySelector('#sound-button');
 const captureBackdrop = document.querySelector('#capture-backdrop');
 const closeCaptureButton = document.querySelector('#close-capture');
 const capturedHomeImage = document.querySelector('#captured-home-image');
@@ -1005,6 +1007,28 @@ function deleteMemory(date){
   renderRecords();
   renderManager();
 }
+function resetHome(){
+  if(isSharedHome){ showCaptureNotice('공유받은 집이에요','처음부터 시작하기는 내 집에서만 사용할 수 있어요.'); return; }
+  if(!confirm('기록, 장식, 시작일, 집 이름을 모두 지우고 처음부터 시작할까요?')) return;
+  memories=[];
+  decorLayout={};
+  streakStartDate='';
+  houseName='우리';
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(DECOR_LAYOUT_KEY);
+  localStorage.removeItem(STREAK_START_KEY);
+  localStorage.removeItem(HOUSE_NAME_KEY);
+  selectedDecor='flower';
+  houseNameText.textContent=`${houseName}네 집`;
+  houseNameInput.value=houseName;
+  drawNameplate();
+  renderDecorOptions();
+  rebuildDecorations();
+  renderRecords();
+  updateStreak();
+  updateHouseName();
+  showCaptureNotice('처음 상태로 돌아왔어요!','이제 새로운 잘한 일부터 차곡차곡 기록해 보세요.');
+}
 
 function localDateString(date = new Date()){
   const offset = date.getTimezoneOffset()*60000;
@@ -1102,7 +1126,13 @@ document.querySelector('#save-memory').addEventListener('click',()=>{
   persistLocal(STORAGE_KEY,JSON.stringify(memories)); addDecoration(selectedDecor,memories.length,true,text,`memory-${memory.date}`,flowerColor); renderRecords(); input.value=''; closeModal(); toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),3600);
 });
 input.addEventListener('keydown',e=>{ if(e.key==='Enter') document.querySelector('#save-memory').click(); });
-document.querySelector('#sound-button').addEventListener('click',e=>{ e.currentTarget.textContent=e.currentTarget.textContent==='♪'?'×':'♪'; });
+soundButton.addEventListener('click',()=>{
+  const soundOn=soundButton.getAttribute('aria-pressed')!=='true';
+  soundButton.setAttribute('aria-pressed',String(soundOn));
+  soundButton.setAttribute('aria-label',soundOn?'소리 끄기':'소리 켜기');
+  soundButton.dataset.tooltip=soundOn?'소리 끄기':'소리 켜기';
+});
+resetHomeButton.addEventListener('click',resetHome);
 
 document.querySelector('#open-manager').addEventListener('click',openManager);
 document.querySelector('#close-manager').addEventListener('click',closeManager);

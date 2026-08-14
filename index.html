@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.min.js" />
     <link href="https://fonts.googleapis.com/css2?family=Jua&family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./styles.css?v=6" />
+    <link rel="stylesheet" href="./styles.css?v=7" />
   </head>
   <body>
     <main class="app-shell">
@@ -23,7 +23,9 @@
     <button class="streak needs-setup" id="streak-button" type="button" aria-label="따뜻하게 살기 시작한 날 정하기">
       <b id="streak-number">시작일</b><span id="streak-copy">을 정해 주세요</span><i aria-hidden="true">⌄</i>
     </button>
-          <button class="round-button sound-button" id="sound-button" aria-label="소리 켜기">♪</button>
+          <button class="scene-capture-button top-sound-button" id="sound-button" type="button" aria-label="소리 켜기" aria-pressed="false" data-tooltip="소리 켜기">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 5.5v11.2a3.2 3.2 0 1 1-1.6-2.78V8.2l6-1.45v8.45a3.2 3.2 0 1 1-1.6-2.78V5.5Z"/></svg>
+          </button>
           <button class="round-button menu-button" aria-label="메뉴 열기">☰</button>
         </div>
       </header>
@@ -55,6 +57,9 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.2"/><circle cx="6" cy="12" r="2.2"/><circle cx="18" cy="19" r="2.2"/><path d="m8 11 7.9-4.8M8 13l7.9 4.8"/></svg>
           </button>
           <button class="scene-help-button" id="open-guide" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.8 9.1a2.45 2.45 0 0 1 4.63 1.12c0 1.72-1.94 2.07-2.3 3.35"/><path d="M12 16.75h.01"/></svg><span>조작법</span></button>
+          <button class="scene-reset-button" id="reset-home" type="button" aria-label="처음부터 시작하기" data-tooltip="처음부터 시작하기">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.1 9.1A7.7 7.7 0 1 1 4.6 14"/><path d="M5.1 4.8v4.5h4.5"/></svg>
+          </button>
           <div class="scene-hint"><span>↔↕</span> 좌우·위아래로 보고, 장식은 끌어 놓기</div>
         </div>
 
@@ -172,6 +177,6 @@
       </section>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
-    <script type="module" src="./main.js?v=96"></script>
+    <script type="module" src="./main.js?v=97"></script>
   </body>
 </html>
