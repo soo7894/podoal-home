@@ -896,13 +896,14 @@ interiorRenderer.shadowMap.enabled=true;
 interiorRenderer.shadowMap.type=THREE.PCFSoftShadowMap;
 interiorRenderer.outputColorSpace=THREE.SRGBColorSpace;
 const interiorScene=new THREE.Scene();
-interiorScene.background=new THREE.Color(0xf2c66f);
+const interiorPalette={background:0xf5cd58,wall:palette.wall,wallShade:0xffe8b6,trim:palette.trim,roof:palette.roof,wood:palette.wood,floor:0xd89a55,floorLine:0xb87143,glass:palette.glass,blue:palette.blue,leaf:palette.leaf,pot:palette.pot,path:palette.path,cream:palette.cream,pink:palette.pink};
+interiorScene.background=new THREE.Color(interiorPalette.background);
 const interiorCamera=new THREE.PerspectiveCamera(40,1,.1,60);
 interiorCamera.position.set(0,4.9,10.8);
 interiorCamera.lookAt(0,1.25,-.65);
-interiorScene.add(new THREE.HemisphereLight(0xfff2cf,0x785644,2.2));
-const interiorSun=new THREE.DirectionalLight(0xffd28a,3.25); interiorSun.position.set(-3,8,5); interiorSun.castShadow=true; interiorSun.shadow.mapSize.set(1024,1024); interiorScene.add(interiorSun);
-const interiorWarmLight=new THREE.PointLight(0xffb95d,23,11,1.6); interiorWarmLight.position.set(0,3.8,-1); interiorScene.add(interiorWarmLight);
+interiorScene.add(new THREE.HemisphereLight(0xfff3c8,0x56745c,2.3));
+const interiorSun=new THREE.DirectionalLight(0xffe0a0,3.1); interiorSun.position.set(4,9,6); interiorSun.castShadow=true; interiorSun.shadow.mapSize.set(1024,1024); interiorScene.add(interiorSun);
+const interiorWarmLight=new THREE.PointLight(0xffd27c,16,10,1.7); interiorWarmLight.position.set(0,3.8,-1); interiorScene.add(interiorWarmLight);
 const interiorRoom=new THREE.Group(); interiorScene.add(interiorRoom);
 const iMat=(color,roughness=.78)=>new THREE.MeshStandardMaterial({color,roughness});
 function iMesh(geometry,color,position,parent=interiorRoom){ const item=new THREE.Mesh(geometry,iMat(color)); item.position.copy(position); item.castShadow=true; item.receiveShadow=true; parent.add(item); return item; }
@@ -910,50 +911,50 @@ function iBox(x,y,z,color,position,parent=interiorRoom){ return iMesh(new THREE.
 function iCylinder(rt,rb,h,color,position,parent=interiorRoom){ return iMesh(new THREE.CylinderGeometry(rt,rb,h,24),color,position,parent); }
 
 // A complete toy-sized room replaces the doorway view after the third bunch.
-iBox(12,.22,8,0xb9794f,new THREE.Vector3(0,-.11,-.25));
-for(let z=-4;z<3.7;z+=.8) iBox(11.8,.018,.025,0x8f593c,new THREE.Vector3(0,.015,z));
-iBox(12,5,.22,0xf8dca2,new THREE.Vector3(0,2.5,-4));
-iBox(.22,5,8,0xf0c982,new THREE.Vector3(-6,2.5,-.1));
-iBox(.22,5,8,0xf0c982,new THREE.Vector3(6,2.5,-.1));
-iBox(12,.13,.18,0xc87c4f,new THREE.Vector3(0,.11,-3.84));
-iBox(.16,2.05,.10,0xfff5d7,new THREE.Vector3(-2.35,2.65,-3.84));
-iBox(.16,2.05,.10,0xfff5d7,new THREE.Vector3(.15,2.65,-3.84));
-iBox(2.65,.16,.10,0xfff5d7,new THREE.Vector3(-1.1,2.65,-3.84));
-iBox(2.65,.16,.10,0xfff5d7,new THREE.Vector3(-1.1,3.62,-3.84));
-const windowGlass=iBox(2.35,1.8,.05,0x8fcbd3,new THREE.Vector3(-1.1,2.65,-3.77)); windowGlass.material.roughness=.28;
-iBox(.13,2.05,.10,0xfff5d7,new THREE.Vector3(-1.1,2.65,-3.71));
-iBox(2.65,.13,.10,0xfff5d7,new THREE.Vector3(-1.1,2.65,-3.71));
-iBox(.58,2.45,.22,0xe7836c,new THREE.Vector3(-2.78,2.55,-3.65));
-iBox(.58,2.45,.22,0xe7836c,new THREE.Vector3(.58,2.55,-3.65));
-const ceilingShade=iMesh(new THREE.ConeGeometry(.58,.5,24,1,true),0xf4bc55,new THREE.Vector3(0,4.3,-.9)); ceilingShade.rotation.x=Math.PI;
-iCylinder(.12,.12,.22,0x72503c,new THREE.Vector3(0,4.73,-.9));
-const wallArt=iBox(1.5,1.05,.10,0x9d6243,new THREE.Vector3(3.4,2.7,-3.82));
-iBox(1.28,.83,.04,0xffefc4,new THREE.Vector3(3.4,2.7,-3.74));
-iMesh(new THREE.CircleGeometry(.25,24),0xed8c78,new THREE.Vector3(3.25,2.78,-3.69)).rotation.y=0;
+iBox(12,.22,8,interiorPalette.floor,new THREE.Vector3(0,-.11,-.25));
+for(let z=-4;z<3.7;z+=.8) iBox(11.8,.018,.025,interiorPalette.floorLine,new THREE.Vector3(0,.015,z));
+iBox(12,5,.22,interiorPalette.wall,new THREE.Vector3(0,2.5,-4));
+iBox(.22,5,8,interiorPalette.wallShade,new THREE.Vector3(-6,2.5,-.1));
+iBox(.22,5,8,interiorPalette.wallShade,new THREE.Vector3(6,2.5,-.1));
+iBox(12,.13,.18,interiorPalette.trim,new THREE.Vector3(0,.11,-3.84));
+iBox(.16,2.05,.10,interiorPalette.cream,new THREE.Vector3(-2.35,2.65,-3.84));
+iBox(.16,2.05,.10,interiorPalette.cream,new THREE.Vector3(.15,2.65,-3.84));
+iBox(2.65,.16,.10,interiorPalette.cream,new THREE.Vector3(-1.1,2.65,-3.84));
+iBox(2.65,.16,.10,interiorPalette.cream,new THREE.Vector3(-1.1,3.62,-3.84));
+const windowGlass=iBox(2.35,1.8,.05,interiorPalette.glass,new THREE.Vector3(-1.1,2.65,-3.77)); windowGlass.material.roughness=.38;
+iBox(.13,2.05,.10,interiorPalette.cream,new THREE.Vector3(-1.1,2.65,-3.71));
+iBox(2.65,.13,.10,interiorPalette.cream,new THREE.Vector3(-1.1,2.65,-3.71));
+iBox(.58,2.45,.22,interiorPalette.roof,new THREE.Vector3(-2.78,2.55,-3.65));
+iBox(.58,2.45,.22,interiorPalette.roof,new THREE.Vector3(.58,2.55,-3.65));
+const ceilingShade=iMesh(new THREE.ConeGeometry(.58,.5,24,1,true),interiorPalette.path,new THREE.Vector3(0,4.3,-.9)); ceilingShade.rotation.x=Math.PI;
+iCylinder(.12,.12,.22,interiorPalette.wood,new THREE.Vector3(0,4.73,-.9));
+const wallArt=iBox(1.5,1.05,.10,interiorPalette.wood,new THREE.Vector3(3.4,2.7,-3.82));
+iBox(1.28,.83,.04,interiorPalette.cream,new THREE.Vector3(3.4,2.7,-3.74));
+iMesh(new THREE.CircleGeometry(.25,24),interiorPalette.pink||palette.pink,new THREE.Vector3(3.25,2.78,-3.69)).rotation.y=0;
 
 const interiorFurniture=new THREE.Group(); interiorScene.add(interiorFurniture);
 function markInteriorItem(group,type){ group.userData.interiorType=type; group.userData.radius=INTERIOR_ITEMS[type].radius; group.traverse(child=>{ if(child.isMesh) child.userData.interiorRoot=group; }); return group; }
 function createInteriorItem(type){
   const group=new THREE.Group(); interiorFurniture.add(group);
   if(type==='sofa'){
-    iBox(2.25,.54,.9,0x78a39c,new THREE.Vector3(0,.38,0),group);
-    iBox(2.25,.88,.28,0x638b86,new THREE.Vector3(0,.78,-.34),group);
-    iBox(.28,.7,1.02,0x638b86,new THREE.Vector3(-1.13,.48,0),group); iBox(.28,.7,1.02,0x638b86,new THREE.Vector3(1.13,.48,0),group);
-    iBox(.78,.17,.55,0xa9cbc2,new THREE.Vector3(-.48,.72,-.02),group); iBox(.78,.17,.55,0xa9cbc2,new THREE.Vector3(.48,.72,-.02),group);
+    iBox(2.25,.54,.9,interiorPalette.blue,new THREE.Vector3(0,.38,0),group);
+    iBox(2.25,.88,.28,0x4f8ea1,new THREE.Vector3(0,.78,-.34),group);
+    iBox(.28,.7,1.02,0x4f8ea1,new THREE.Vector3(-1.13,.48,0),group); iBox(.28,.7,1.02,0x4f8ea1,new THREE.Vector3(1.13,.48,0),group);
+    iBox(.78,.17,.55,0xaed6d8,new THREE.Vector3(-.48,.72,-.02),group); iBox(.78,.17,.55,0xaed6d8,new THREE.Vector3(.48,.72,-.02),group);
   } else if(type==='rug'){
-    const rug=iMesh(new THREE.CylinderGeometry(1.55,1.55,.055,40),0xe99a79,new THREE.Vector3(0,.035,0),group); rug.scale.z=.68;
-    const inner=iMesh(new THREE.TorusGeometry(.99,.055,8,36),0xf5c88e,new THREE.Vector3(0,.073,0),group); inner.rotation.x=Math.PI/2; inner.scale.z=.68;
+    const rug=iMesh(new THREE.CylinderGeometry(1.55,1.55,.055,40),interiorPalette.roof,new THREE.Vector3(0,.035,0),group); rug.scale.z=.68;
+    const inner=iMesh(new THREE.TorusGeometry(.99,.055,8,36),interiorPalette.path,new THREE.Vector3(0,.073,0),group); inner.rotation.x=Math.PI/2; inner.scale.z=.68;
   } else if(type==='lamp'){
-    iCylinder(.34,.42,.12,0x77513b,new THREE.Vector3(0,.06,0),group); iCylinder(.045,.045,1.85,0x77513b,new THREE.Vector3(0,.98,0),group);
-    const shade=iMesh(new THREE.ConeGeometry(.5,.62,24,1,true),0xf5c95f,new THREE.Vector3(0,1.82,0),group); shade.rotation.x=Math.PI;
+    iCylinder(.34,.42,.12,interiorPalette.wood,new THREE.Vector3(0,.06,0),group); iCylinder(.045,.045,1.85,interiorPalette.wood,new THREE.Vector3(0,.98,0),group);
+    const shade=iMesh(new THREE.ConeGeometry(.5,.62,24,1,true),interiorPalette.path,new THREE.Vector3(0,1.82,0),group); shade.rotation.x=Math.PI;
     const glow=new THREE.PointLight(0xffc861,10,4,1.8); glow.position.set(0,1.65,.05); group.add(glow);
   } else if(type==='plant'){
-    iCylinder(.38,.29,.62,0xd87958,new THREE.Vector3(0,.31,0),group); iCylinder(.055,.07,.86,0x5b7847,new THREE.Vector3(0,1.02,0),group);
-    [[-.28,1.15,-.08,.45],[.27,1.34,.02,-.42],[-.1,1.58,0,.18],[.32,1.02,.05,-.6]].forEach(([x,y,z,r])=>{ const leaf=iMesh(new THREE.SphereGeometry(.34,16,12),0x5c925d,new THREE.Vector3(x,y,z),group); leaf.scale.set(.55,1,.32); leaf.rotation.z=r; });
+    iCylinder(.38,.29,.62,interiorPalette.pot,new THREE.Vector3(0,.31,0),group); iCylinder(.055,.07,.86,interiorPalette.leaf,new THREE.Vector3(0,1.02,0),group);
+    [[-.28,1.15,-.08,.45],[.27,1.34,.02,-.42],[-.1,1.58,0,.18],[.32,1.02,.05,-.6]].forEach(([x,y,z,r],index)=>{ const leaf=iMesh(new THREE.SphereGeometry(.34,16,12),index%2?0x6c9f60:interiorPalette.leaf,new THREE.Vector3(x,y,z),group); leaf.scale.set(.55,1,.32); leaf.rotation.z=r; });
   } else if(type==='shelf'){
-    iBox(1.55,.12,.5,0x99623f,new THREE.Vector3(0,.18,0),group); iBox(1.55,.12,.5,0x99623f,new THREE.Vector3(0,1.05,0),group); iBox(1.55,.12,.5,0x99623f,new THREE.Vector3(0,1.9,0),group);
+    iBox(1.55,.12,.5,interiorPalette.wood,new THREE.Vector3(0,.18,0),group); iBox(1.55,.12,.5,interiorPalette.wood,new THREE.Vector3(0,1.05,0),group); iBox(1.55,.12,.5,interiorPalette.wood,new THREE.Vector3(0,1.9,0),group);
     iBox(.13,2.05,.5,0x805038,new THREE.Vector3(-.7,1,0),group); iBox(.13,2.05,.5,0x805038,new THREE.Vector3(.7,1,0),group);
-    iBox(.22,.56,.3,0xe68062,new THREE.Vector3(-.36,1.39,0),group); iBox(.18,.45,.3,0x6ba3a5,new THREE.Vector3(-.1,1.34,0),group); iBox(.25,.63,.3,0xf1bd50,new THREE.Vector3(.18,1.43,0),group);
+    iBox(.22,.56,.3,interiorPalette.roof,new THREE.Vector3(-.36,1.39,0),group); iBox(.18,.45,.3,interiorPalette.blue,new THREE.Vector3(-.1,1.34,0),group); iBox(.25,.63,.3,interiorPalette.trim,new THREE.Vector3(.18,1.43,0),group);
   }
   return markInteriorItem(group,type);
 }
