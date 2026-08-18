@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.min.js" />
     <link href="https://fonts.googleapis.com/css2?family=Jua&family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./styles.css?v=18" />
+    <link rel="stylesheet" href="./styles.css?v=19" />
   </head>
   <body>
     <main class="app-shell">
@@ -183,6 +183,28 @@
       </section>
     </div>
 
+    <section class="interior-view" id="interior-view" aria-hidden="true" aria-label="직접 꾸미는 집 내부">
+      <canvas id="interior-canvas"></canvas>
+      <header class="interior-toolbar">
+        <button class="interior-back-button" id="leave-interior" type="button"><span>←</span> 마당으로</button>
+        <div class="interior-heading">
+          <small>MY WARM LIVING ROOM</small>
+          <strong><span id="interior-house-name">우리네 집</span> 거실</strong>
+        </div>
+        <span class="interior-level-badge">포도송이 3개로 열린 공간</span>
+      </header>
+      <div class="interior-tip" id="interior-tip"><span>↔</span> 가구를 끌어서 원하는 곳에 놓아 보세요</div>
+      <aside class="interior-tray" aria-label="실내 가구 보관함">
+        <div class="interior-tray-copy">
+          <small>MY FURNITURE</small>
+          <strong>거실 꾸미기</strong>
+          <span>가구를 눌러 꺼내고, 끌어서 옮겨요.</span>
+        </div>
+        <div class="interior-options" id="interior-options"></div>
+        <button class="interior-store-button" id="store-interior-item" type="button" hidden>선택한 가구 보관하기</button>
+      </aside>
+    </section>
+
     <div class="toast" id="toast" role="status"><span>✦</span><p><b>오늘의 장식이 놓였어요!</b>집이 조금 더 따뜻해졌습니다.</p></div>
     <div class="entry-backdrop streak-backdrop" id="streak-backdrop" aria-hidden="true">
       <section class="streak-modal" role="dialog" aria-modal="true" aria-labelledby="streak-title">
@@ -228,6 +250,6 @@
       </section>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
-    <script type="module" src="./main.js?v=99"></script>
+    <script type="module" src="./main.js?v=100"></script>
   </body>
 </html>
