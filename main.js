@@ -82,6 +82,8 @@ const ROUTINE_THEME_KEY = 'my-little-day-routine-theme-v1';
 const GRAPE_PROGRESS_KEY = 'my-little-day-grape-progress-v1';
 const COMPLETED_BUNCHES_KEY = 'my-little-day-completed-bunches-v1';
 const GRAPE_MIGRATION_KEY = 'my-little-day-grape-system-v1';
+const GRAPE_SIZE_MIGRATION_KEY = 'my-little-day-grape-size-v2';
+const GRAPES_PER_BUNCH = 6;
 const INTERIOR_LAYOUT_KEY = 'my-little-day-interior-layout-v1';
 const INTERIOR_UNLOCK_BUNCHES = 3;
 const SHARE_ENDPOINT = 'https://alpxeyqkqlacbbluwazq.supabase.co/functions/v1/home-share';
@@ -245,7 +247,7 @@ function unpackSharedHome(data){
   });
   const interiorLayout={};
   if(Array.isArray(data.i)) data.i.forEach(([type,x,z])=>{ if(typeof type==='string'&&Number.isFinite(x)&&Number.isFinite(z)) interiorLayout[type]={placed:true,x:x/100,z:z/100}; });
-  return {memories,streakStartDate:data.s||'',houseName:data.n,decorLayout,interiorLayout,interiorViewAngle:Number.isFinite(data.o)?data.o/1000:0,interiorViewZoom:Number.isFinite(data.q)?data.q/1000:1,grapeProgress:Array.isArray(data.g)?Number(data.g[0])||0:memories.length%7,completedBunches:Array.isArray(data.g)?Number(data.g[1])||0:Math.floor(memories.length/7),view:{rotation:(data.w?.[0]??440)/1000,cameraHeight:(data.w?.[1]??630)/100}};
+  return {memories,streakStartDate:data.s||'',houseName:data.n,decorLayout,interiorLayout,interiorViewAngle:Number.isFinite(data.o)?data.o/1000:0,interiorViewZoom:Number.isFinite(data.q)?data.q/1000:1,grapeProgress:Array.isArray(data.g)?Number(data.g[0])||0:memories.length%GRAPES_PER_BUNCH,completedBunches:Array.isArray(data.g)?Number(data.g[1])||0:Math.floor(memories.length/GRAPES_PER_BUNCH),view:{rotation:(data.w?.[0]??440)/1000,cameraHeight:(data.w?.[1]??630)/100}};
 }
 function encodeSharedHome(data){
   const packed=window.LZString?.compressToEncodedURIComponent(JSON.stringify(data));
@@ -271,17 +273,29 @@ let houseName = sharedHome?.houseName ?? (localStorage.getItem(HOUSE_NAME_KEY) |
 let routineTheme = isSharedHome ? 'care' : (localStorage.getItem(ROUTINE_THEME_KEY) || 'care');
 if(!ROUTINE_THEMES[routineTheme]) routineTheme='care';
 const eligibleMemoryCount=memories.length;
-let grapeProgress=isSharedHome?(sharedHome?.grapeProgress??eligibleMemoryCount%7):Number(localStorage.getItem(GRAPE_PROGRESS_KEY));
-let completedBunches=isSharedHome?(sharedHome?.completedBunches??Math.floor(eligibleMemoryCount/7)):Number(localStorage.getItem(COMPLETED_BUNCHES_KEY));
+const hadLegacyGrapeSystem=!isSharedHome&&Boolean(localStorage.getItem(GRAPE_MIGRATION_KEY));
+let grapeProgress=isSharedHome?(sharedHome?.grapeProgress??eligibleMemoryCount%GRAPES_PER_BUNCH):Number(localStorage.getItem(GRAPE_PROGRESS_KEY));
+let completedBunches=isSharedHome?(sharedHome?.completedBunches??Math.floor(eligibleMemoryCount/GRAPES_PER_BUNCH)):Number(localStorage.getItem(COMPLETED_BUNCHES_KEY));
 if(!isSharedHome&&!localStorage.getItem(GRAPE_MIGRATION_KEY)){
-  grapeProgress=eligibleMemoryCount%7;
-  completedBunches=Math.floor(eligibleMemoryCount/7);
+  grapeProgress=eligibleMemoryCount%GRAPES_PER_BUNCH;
+  completedBunches=Math.floor(eligibleMemoryCount/GRAPES_PER_BUNCH);
   localStorage.setItem(GRAPE_PROGRESS_KEY,String(grapeProgress));
   localStorage.setItem(COMPLETED_BUNCHES_KEY,String(completedBunches));
   localStorage.setItem(GRAPE_MIGRATION_KEY,'1');
 }
-if(!Number.isFinite(grapeProgress)||grapeProgress<0||grapeProgress>6) grapeProgress=0;
 if(!Number.isFinite(completedBunches)||completedBunches<0) completedBunches=0;
+if(!Number.isFinite(grapeProgress)||grapeProgress<0) grapeProgress=0;
+if(!isSharedHome&&!localStorage.getItem(GRAPE_SIZE_MIGRATION_KEY)){
+  if(hadLegacyGrapeSystem){
+    const legacyGrapeTotal=completedBunches*7+grapeProgress;
+    completedBunches=Math.floor(legacyGrapeTotal/GRAPES_PER_BUNCH);
+    grapeProgress=legacyGrapeTotal%GRAPES_PER_BUNCH;
+    localStorage.setItem(GRAPE_PROGRESS_KEY,String(grapeProgress));
+    localStorage.setItem(COMPLETED_BUNCHES_KEY,String(completedBunches));
+  }
+  localStorage.setItem(GRAPE_SIZE_MIGRATION_KEY,'1');
+}
+if(isSharedHome&&grapeProgress>=GRAPES_PER_BUNCH){ completedBunches+=Math.floor(grapeProgress/GRAPES_PER_BUNCH); grapeProgress%=GRAPES_PER_BUNCH; }
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true, preserveDrawingBuffer:true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -1256,20 +1270,21 @@ function formatMemoryTimestamp(value){
   return `${date.getMonth()+1}월 ${date.getDate()}일 ${period} ${displayHour}:${String(date.getMinutes()).padStart(2,'0')}`;
 }
 function grapeDotsHTML(count,animateLast=false){
-  return Array.from({length:7},(_,index)=>`<i class="grape-dot${index<count?' filled':''}${animateLast&&index===count-1?' just-added':''}" aria-hidden="true"></i>`).join('');
+  return Array.from({length:GRAPES_PER_BUNCH},(_,index)=>`<i class="grape-dot${index<count?' filled':''}${animateLast&&index===count-1?' just-added':''}" aria-hidden="true"></i>`).join('');
 }
 function saveGrapeProgress(){
   persistLocal(GRAPE_PROGRESS_KEY,String(grapeProgress));
   persistLocal(COMPLETED_BUNCHES_KEY,String(completedBunches));
   persistLocal(GRAPE_MIGRATION_KEY,'1');
+  persistLocal(GRAPE_SIZE_MIGRATION_KEY,'1');
 }
 
 function renderRecords(){
   const total = memories.length;
-  countEl.innerHTML=`${grapeProgress} <small>/ 7</small>`;
+  countEl.innerHTML=`${grapeProgress} <small>/ ${GRAPES_PER_BUNCH}</small>`;
   grapeBunch.innerHTML=grapeDotsHTML(grapeProgress);
-  grapeBunch.setAttribute('aria-label',`포도알 7개 중 ${grapeProgress}개`);
-  const remaining=7-grapeProgress;
+  grapeBunch.setAttribute('aria-label',`포도알 ${GRAPES_PER_BUNCH}개 중 ${grapeProgress}개`);
+  const remaining=GRAPES_PER_BUNCH-grapeProgress;
   grapeNextCopy.textContent=grapeProgress?`${remaining}개의 잘한 일을 더 찾으면 새로운 장식이 와요.`:'새로운 포도송이를 천천히 채워 볼까요?';
   const interiorStatus=completedBunches>=INTERIOR_UNLOCK_BUNCHES?'거실이 열렸어요':`거실까지 ${INTERIOR_UNLOCK_BUNCHES-completedBunches}송이`;
   completedBunchesEl.textContent=`완성한 포도송이 ${completedBunches}개 · ${interiorStatus}`;
@@ -1332,9 +1347,9 @@ function openGrapeReward(memory,bunchCompleted){
   pendingRewardMemoryDate=memory.date;
   document.querySelector('#reward-title').innerHTML=bunchCompleted?'포도송이가<br /><em>통통하게 완성됐어요!</em>':'오늘의 포도알이<br /><em>톡! 붙었어요</em>';
   rewardPraise.textContent=praiseFor(memory);
-  rewardBunch.innerHTML=grapeDotsHTML(bunchCompleted?7:grapeProgress,true);
+  rewardBunch.innerHTML=grapeDotsHTML(bunchCompleted?GRAPES_PER_BUNCH:grapeProgress,true);
   const interiorGift=bunchCompleted?interiorGiftForBunch(completedBunches):null;
-  const progressCopy=bunchCompleted&&completedBunches===INTERIOR_UNLOCK_BUNCHES?'7개의 잘한 내가 담기며, 집 안의 거실도 열렸어요!':bunchCompleted?'7개의 잘한 내가 한 송이에 담겼어요.':`이번 포도송이 ${grapeProgress} / 7`;
+  const progressCopy=bunchCompleted&&completedBunches===INTERIOR_UNLOCK_BUNCHES?'6개의 잘한 내가 담기며, 집 안의 거실도 열렸어요!':bunchCompleted?'6개의 잘한 내가 한 송이에 담겼어요.':`이번 포도송이 ${grapeProgress} / ${GRAPES_PER_BUNCH}`;
   rewardProgressText.innerHTML=`${progressCopy}${interiorGift?`<em>거실 선물 도착 · ${interiorGift[1].label}</em>`:''}`;
   rewardGift.hidden=!bunchCompleted;
   rewardContinueButton.hidden=bunchCompleted;
@@ -1364,7 +1379,7 @@ function renderInventory(){
     const info=DECOR_INFO[memory.decor];
     const count=memory.rewardMemoryDates?.length||1;
     return `<article class="inventory-item"><img src="${decorThumbnail(memory.decor)}" alt="" /><div><b>${info.label}</b><small>${count}개의 잘한 일이 담긴 장식</small></div>${isSharedHome?'':`<button type="button" data-place-reward="${memory.date}">집에 놓기</button>`}</article>`;
-  }).join(''):'<p class="inventory-empty">보관 중인 장식이 없어요.<br />포도알 7개를 모으면 새로운 장식이 찾아옵니다.</p>';
+  }).join(''):'<p class="inventory-empty">보관 중인 장식이 없어요.<br />포도알 6개를 모으면 새로운 장식이 찾아옵니다.</p>';
 }
 function openInventory(){
   renderInventory();
@@ -1480,6 +1495,7 @@ function resetHome(){
   localStorage.removeItem(GRAPE_PROGRESS_KEY);
   localStorage.removeItem(COMPLETED_BUNCHES_KEY);
   localStorage.removeItem(GRAPE_MIGRATION_KEY);
+  localStorage.removeItem(GRAPE_SIZE_MIGRATION_KEY);
   localStorage.removeItem(INTERIOR_LAYOUT_KEY);
   selectedDecor='flower';
   routineTheme='care';
@@ -1591,14 +1607,14 @@ function recordMemory(text,kind='win'){
   memories.unshift(memory);
   grapeProgress+=1;
   let bunchCompleted=false;
-  if(grapeProgress>=7){
+  if(grapeProgress>=GRAPES_PER_BUNCH){
     bunchCompleted=true;
     grapeProgress=0;
     completedBunches+=1;
     memory.decor=nextGiftType();
     memory.flowerColor=memory.decor==='flower'?randomFlowerColor():null;
     memory.rewardStored=true;
-    memory.rewardMemoryDates=memories.slice(0,7).map(item=>item.date);
+    memory.rewardMemoryDates=memories.slice(0,GRAPES_PER_BUNCH).map(item=>item.date);
   }
   if(!streakStartDate){
     streakStartDate=localDateString(new Date(memory.date));
