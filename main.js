@@ -1017,7 +1017,7 @@ function rebuildInterior(){
 }
 let selectedInteriorItem=null,draggingInteriorItem=null,interiorMoved=false,rotatingInterior=false,interiorRotateStartX=0;
 let interiorOrbitAngle=Number(sharedHome?.interiorViewAngle??interiorLayout.viewAngle)||0,interiorOrbitTargetAngle=interiorOrbitAngle,interiorRotateStartAngle=interiorOrbitAngle;
-let interiorZoom=THREE.MathUtils.clamp(Number(sharedHome?.interiorViewZoom??interiorLayout.viewZoom)||1,.8,1.5),interiorZoomTarget=interiorZoom,interiorZoomSaveTimer=null;
+let interiorZoom=THREE.MathUtils.clamp(Number(sharedHome?.interiorViewZoom??interiorLayout.viewZoom)||1,.8,1.9),interiorZoomTarget=interiorZoom,interiorZoomSaveTimer=null;
 const interiorRaycaster=new THREE.Raycaster(),interiorPointer=new THREE.Vector2(),interiorDragPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),interiorDragPoint=new THREE.Vector3(),interiorDragOffset=new THREE.Vector3(),interiorLastValid=new THREE.Vector3();
 function setInteriorRay(event){ const rect=interiorCanvas.getBoundingClientRect(); interiorPointer.x=((event.clientX-rect.left)/rect.width)*2-1; interiorPointer.y=-((event.clientY-rect.top)/rect.height)*2+1; interiorRaycaster.setFromCamera(interiorPointer,interiorCamera); }
 function interiorItemAt(event){ setInteriorRay(event); const hit=interiorRaycaster.intersectObjects([...interiorObjects.values()],true)[0]; return hit?.object?.userData?.interiorRoot||null; }
@@ -1054,7 +1054,7 @@ interiorCanvas.addEventListener('pointerup',finishInteriorDrag);
 interiorCanvas.addEventListener('pointercancel',finishInteriorDrag);
 interiorCanvas.addEventListener('wheel',event=>{
   event.preventDefault();
-  interiorZoomTarget=THREE.MathUtils.clamp(interiorZoomTarget+event.deltaY*.0011,.8,1.5);
+  interiorZoomTarget=THREE.MathUtils.clamp(interiorZoomTarget+event.deltaY*.0017,.8,1.9);
   clearTimeout(interiorZoomSaveTimer);
   interiorZoomSaveTimer=setTimeout(()=>{ interiorLayout.viewZoom=interiorZoomTarget; saveInteriorLayout(); },140);
 },{passive:false});
