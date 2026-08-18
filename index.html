@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.min.js" />
     <link href="https://fonts.googleapis.com/css2?family=Jua&family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./styles.css?v=17" />
+    <link rel="stylesheet" href="./styles.css?v=18" />
   </head>
   <body>
     <main class="app-shell">
@@ -35,7 +35,7 @@
           <p class="eyebrow"><span></span> AUGUST 07, 2026</p>
           <h1>오늘의 작은<br /><em>잘함</em>을 집에 놓아요.</h1>
           <p class="intro">잘 해낸 하루는 작아도 충분히 반짝여요.<br />하나의 장식으로 오늘을 기억해 보세요.</p>
-          <button class="primary-button" id="open-entry"><span>+</span> 오늘의 잘한 일 기록하기</button>
+          <button class="primary-button" id="open-entry"><span>+</span> 오늘의 포도알 남기기</button>
         </div>
 
         <div class="scene-wrap" aria-label="3D 장난감 집">
@@ -91,9 +91,10 @@
           <h2>차곡차곡 쌓인<br />나의 <em>잘한 일</em></h2>
         </div>
         <div class="progress-card">
-          <div class="progress-top"><span>이번 달의 따뜻한 기록</span><b id="record-count">02 <small>/ 31</small></b></div>
-          <div class="progress-track"><i id="progress-fill"></i></div>
-          <p>한 번의 기록이 집을 조금 더 나답게 만들어요.</p>
+          <div class="progress-top"><span>이번 포도송이</span><b id="record-count">0 <small>/ 7</small></b></div>
+          <div class="grape-bunch" id="grape-bunch" aria-label="포도알 진행 상황"></div>
+          <p id="grape-next-copy">포도알 7개가 모이면 새로운 장식이 와요.</p>
+          <small class="completed-bunches" id="completed-bunches">완성한 포도송이 0개</small>
         </div>
         <div class="recent-card">
           <p class="mini-title">RECENT MEMORIES</p>
@@ -118,6 +119,7 @@
             <div class="theme-picker"><span>나의 테마</span><div id="theme-options" role="group" aria-label="기록 테마"></div></div>
             <button class="rest-day-button" id="save-rest-day" type="button">☁ 오늘은 쉬어도 잘했어요</button>
             <button class="weekly-reflection-button" id="open-weekly-reflection" type="button">이번 주 돌아보기 <span>→</span></button>
+            <button class="inventory-button" id="open-inventory" type="button">장식 보관함 <span id="inventory-count">0</span></button>
           </div>
         </section>
       </section>
@@ -131,9 +133,39 @@
         <label for="memory-input">잘한 일을 짧게 적어 주세요</label>
         <input id="memory-input" maxlength="42" placeholder="예: 산책을 하며 나에게 집중했다" autocomplete="off" />
         <div class="entry-quick-prompts" id="entry-quick-prompts" aria-label="기록 문장 제안"></div>
-        <p class="choose-label">이 기억을 어떤 장식으로 남길까요? <b>32가지</b></p>
-        <div class="decor-options" id="decor-options" aria-label="집과 정원 장식 고르기"></div>
-        <button class="primary-button save-button" id="save-memory">이 장식을 집에 놓기 <span>→</span></button>
+        <div class="decor-options" id="decor-options" hidden aria-hidden="true"></div>
+        <button class="primary-button save-button" id="save-memory">포도알 받기 <span>→</span></button>
+      </section>
+    </div>
+
+    <div class="entry-backdrop reward-backdrop" id="grape-reward-backdrop" aria-hidden="true">
+      <section class="reward-modal" role="dialog" aria-modal="true" aria-labelledby="reward-title">
+        <button class="close-modal" id="close-grape-reward" aria-label="닫기">×</button>
+        <p class="eyebrow"><span></span> TODAY'S GRAPE</p>
+        <h2 id="reward-title">오늘의 포도알이<br /><em>톡! 붙었어요</em></h2>
+        <p class="reward-praise" id="reward-praise"></p>
+        <div class="reward-bunch" id="reward-bunch" aria-label="포도알 획득 결과"></div>
+        <strong class="reward-progress-text" id="reward-progress-text"></strong>
+        <section class="reward-gift" id="reward-gift" hidden>
+          <p class="mini-title">A NEW GIFT</p>
+          <img id="reward-gift-image" alt="" />
+          <h3 id="reward-gift-name"></h3>
+          <p>일곱 개의 잘한 일이 모여 새로운 장식이 되었어요.</p>
+        </section>
+        <div class="reward-actions">
+          <button class="plain-button reward-continue" id="reward-continue" type="button">집으로 돌아가기</button>
+          <button class="plain-button reward-store" id="reward-store" type="button" hidden>보관함에 넣기</button>
+          <button class="primary-button reward-place" id="reward-place" type="button" hidden>집에 놓기</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="entry-backdrop inventory-backdrop" id="inventory-backdrop" aria-hidden="true">
+      <section class="inventory-modal" role="dialog" aria-modal="true" aria-labelledby="inventory-title">
+        <button class="close-modal" id="close-inventory" aria-label="닫기">×</button>
+        <p class="eyebrow"><span></span> MY DECOR STORAGE</p>
+        <h2 id="inventory-title">차곡차곡 모은<br /><em>장식 보관함</em></h2>
+        <div class="inventory-list" id="inventory-list"></div>
       </section>
     </div>
 
@@ -188,14 +220,14 @@
         <p class="eyebrow"><span></span> WELCOME HOME</p>
         <h2 id="guide-title">나만의 집을<br /><em>꾸며볼까요?</em></h2>
         <ol class="guide-steps">
-          <li><b>1</b><span><strong>잘한 일 기록</strong>왼쪽의 ‘오늘의 잘한 일 기록하기’를 눌러요.</span></li>
-          <li><b>2</b><span><strong>장식 배치</strong>생긴 장식을 끌어서 집 밖 원하는 곳에 놓아요.</span></li>
+          <li><b>1</b><span><strong>포도알 기록</strong>왼쪽의 ‘오늘의 포도알 남기기’를 눌러요.</span></li>
+          <li><b>2</b><span><strong>포도송이 완성</strong>포도알 7개가 모이면 새로운 장식을 받아요.</span></li>
           <li><b>3</b><span><strong>집 둘러보기</strong>빈 공간을 드래그하면 집을 회전하고 위아래 시점도 바뀌어요.</span></li>
         </ol>
         <button class="primary-button save-button" id="finish-guide" type="button">시작하기 <span>→</span></button>
       </section>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
-    <script type="module" src="./main.js?v=98"></script>
+    <script type="module" src="./main.js?v=99"></script>
   </body>
 </html>

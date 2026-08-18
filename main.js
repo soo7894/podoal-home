@@ -7,7 +7,9 @@ const modal = document.querySelector('#entry-backdrop');
 const input = document.querySelector('#memory-input');
 const recentList = document.querySelector('#recent-list');
 const countEl = document.querySelector('#record-count');
-const progressFill = document.querySelector('#progress-fill');
+const grapeBunch = document.querySelector('#grape-bunch');
+const grapeNextCopy = document.querySelector('#grape-next-copy');
+const completedBunchesEl = document.querySelector('#completed-bunches');
 const todayPreview = document.querySelector('#today-preview');
 const previewCount = document.querySelector('#preview-count');
 const toast = document.querySelector('#toast');
@@ -50,6 +52,19 @@ const themeOptions = document.querySelector('#theme-options');
 const saveRestDayButton = document.querySelector('#save-rest-day');
 const openWeeklyReflectionButton = document.querySelector('#open-weekly-reflection');
 const weeklyLetter = document.querySelector('#weekly-letter');
+const rewardBackdrop = document.querySelector('#grape-reward-backdrop');
+const rewardPraise = document.querySelector('#reward-praise');
+const rewardBunch = document.querySelector('#reward-bunch');
+const rewardProgressText = document.querySelector('#reward-progress-text');
+const rewardGift = document.querySelector('#reward-gift');
+const rewardGiftImage = document.querySelector('#reward-gift-image');
+const rewardGiftName = document.querySelector('#reward-gift-name');
+const rewardContinueButton = document.querySelector('#reward-continue');
+const rewardStoreButton = document.querySelector('#reward-store');
+const rewardPlaceButton = document.querySelector('#reward-place');
+const inventoryBackdrop = document.querySelector('#inventory-backdrop');
+const inventoryList = document.querySelector('#inventory-list');
+const inventoryCount = document.querySelector('#inventory-count');
 const STORAGE_KEY = 'my-little-day-memories-v1';
 const HOUSE_NAME_KEY = 'my-little-day-house-name-v1';
 const STREAK_START_KEY = 'my-little-day-streak-start-v1';
@@ -59,10 +74,14 @@ const SHARE_HASH_PREFIX = '#my-little-home=';
 const SHARE_ID_PREFIX = '#share=';
 const SHARE_LINK_CACHE_KEY = 'my-little-day-last-share-link-v1';
 const ROUTINE_THEME_KEY = 'my-little-day-routine-theme-v1';
+const GRAPE_PROGRESS_KEY = 'my-little-day-grape-progress-v1';
+const COMPLETED_BUNCHES_KEY = 'my-little-day-completed-bunches-v1';
+const GRAPE_MIGRATION_KEY = 'my-little-day-grape-system-v1';
 const SHARE_ENDPOINT = 'https://alpxeyqkqlacbbluwazq.supabase.co/functions/v1/home-share';
 const SHARE_PUBLISHABLE_KEY = 'sb_publishable_kx3FsYOCmIZJTVcIDr1B0g_FWZr8BT_';
 let selectedDecor = 'flower';
 let editingMemoryDate = null;
+let pendingRewardMemoryDate = null;
 const ROUTINE_THEMES = {
   care:{label:'나를 돌보는',chip:'돌봄',prompts:['나에게 고마웠던 순간을 적어 볼까요?','내 몸을 위해 해낸 작은 일을 남겨요.','오늘 나를 편하게 해 준 선택은 무엇인가요?']},
   growth:{label:'조금씩 자라는',chip:'성장',prompts:['어제보다 한 걸음 나아간 일을 적어 볼까요?','배운 것 하나를 짧게 남겨요.','미뤄둔 일 중 시작한 것은 무엇인가요?']},
@@ -185,21 +204,24 @@ function packSharedHome(){
   });
   return {
     v:2,
-    m:memories.map(memory=>[memory.text,Math.max(0,SHARE_DECOR_TYPES.indexOf(memory.decor)),Date.parse(memory.date)||0,memory.flowerColor||0,memory.kind==='rest'?1:0]),
+    m:memories.map(memory=>[memory.text,Math.max(0,SHARE_DECOR_TYPES.indexOf(memory.decor)),Date.parse(memory.date)||0,memory.flowerColor||0,memory.kind==='rest'?1:0,memory.decor&&memory.decor!=='rest'?1:0,memory.rewardStored?1:0,(memory.rewardMemoryDates||[]).map(date=>Date.parse(date)||0)]),
     s:streakStartDate,
     n:houseName,
     d:active,
+    g:[grapeProgress,completedBunches],
     w:[Math.round(world.rotation.y*1000),Math.round(camera.position.y*100)]
   };
 }
 function unpackSharedHome(data){
   if(!Array.isArray(data.m)||!Array.isArray(data.d)||typeof data.n!=='string') return null;
-  const memories=data.m.map(([text,typeIndex,time,flowerColor,isRest])=>({
+  const memories=data.m.map(([text,typeIndex,time,flowerColor,isRest,hasDecor,rewardStored,rewardTimes])=>({
     text:String(text||''),
-    decor:isRest?'rest':SHARE_DECOR_TYPES[typeIndex]||'flower',
+    decor:hasDecor===undefined?(isRest?'rest':SHARE_DECOR_TYPES[typeIndex]||'flower'):hasDecor===0?(isRest?'rest':null):SHARE_DECOR_TYPES[typeIndex]||'flower',
     date:Number.isFinite(time)&&time>0?new Date(time).toISOString():new Date().toISOString(),
     flowerColor:flowerColor||null,
-    kind:isRest?'rest':undefined
+    kind:isRest?'rest':undefined,
+    rewardStored:Boolean(rewardStored),
+    rewardMemoryDates:Array.isArray(rewardTimes)?rewardTimes.filter(time=>Number.isFinite(time)&&time>0).map(time=>new Date(time).toISOString()):[]
   }));
   const decorLayout={};
   data.d.forEach(([compactId,x,z,flowerColor,bloomMask,roofLightOn])=>{
@@ -211,7 +233,7 @@ function unpackSharedHome(data){
     if(roofLightOn) saved.roofLightOn=true;
     decorLayout[id]=saved;
   });
-  return {memories,streakStartDate:data.s||'',houseName:data.n,decorLayout,view:{rotation:(data.w?.[0]??440)/1000,cameraHeight:(data.w?.[1]??630)/100}};
+  return {memories,streakStartDate:data.s||'',houseName:data.n,decorLayout,grapeProgress:Array.isArray(data.g)?Number(data.g[0])||0:memories.length%7,completedBunches:Array.isArray(data.g)?Number(data.g[1])||0:Math.floor(memories.length/7),view:{rotation:(data.w?.[0]??440)/1000,cameraHeight:(data.w?.[1]??630)/100}};
 }
 function encodeSharedHome(data){
   const packed=window.LZString?.compressToEncodedURIComponent(JSON.stringify(data));
@@ -235,6 +257,18 @@ let decorLayout = sharedHome?.decorLayout ?? JSON.parse(localStorage.getItem(DEC
 let houseName = sharedHome?.houseName ?? (localStorage.getItem(HOUSE_NAME_KEY) || '우리');
 let routineTheme = isSharedHome ? 'care' : (localStorage.getItem(ROUTINE_THEME_KEY) || 'care');
 if(!ROUTINE_THEMES[routineTheme]) routineTheme='care';
+const eligibleMemoryCount=memories.length;
+let grapeProgress=isSharedHome?(sharedHome?.grapeProgress??eligibleMemoryCount%7):Number(localStorage.getItem(GRAPE_PROGRESS_KEY));
+let completedBunches=isSharedHome?(sharedHome?.completedBunches??Math.floor(eligibleMemoryCount/7)):Number(localStorage.getItem(COMPLETED_BUNCHES_KEY));
+if(!isSharedHome&&!localStorage.getItem(GRAPE_MIGRATION_KEY)){
+  grapeProgress=eligibleMemoryCount%7;
+  completedBunches=Math.floor(eligibleMemoryCount/7);
+  localStorage.setItem(GRAPE_PROGRESS_KEY,String(grapeProgress));
+  localStorage.setItem(COMPLETED_BUNCHES_KEY,String(completedBunches));
+  localStorage.setItem(GRAPE_MIGRATION_KEY,'1');
+}
+if(!Number.isFinite(grapeProgress)||grapeProgress<0||grapeProgress>6) grapeProgress=0;
+if(!Number.isFinite(completedBunches)||completedBunches<0) completedBunches=0;
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true, preserveDrawingBuffer:true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -671,7 +705,11 @@ if(type==='chime') {
   if(!savedPosition || savedPosition.x!==g.position.x || savedPosition.z!==g.position.z) saveDecorationPosition(g);
   if(animate) { const baseY=g.position.y; g.scale.setScalar(.01); const start=performance.now(); const grow=now=>{ const p=Math.min((now-start)/480,1); g.scale.setScalar(1+(1-p)*.15); g.position.y=baseY+Math.sin(p*Math.PI)*.22; if(p<1) requestAnimationFrame(grow); else g.position.y=baseY; }; requestAnimationFrame(grow); }
 }
-function addStoredDecorations(){ memories.filter(memory=>memory.kind!=='rest').forEach((m,i)=>addDecoration(m.decor,i,false,m.text,`memory-${m.date||i}`,m.flowerColor)); }
+function decorationMemoryText(memory){
+  const bundled=(memory.rewardMemoryDates||[]).map(date=>memories.find(item=>item.date===date)?.text).filter(Boolean);
+  return bundled.length?bundled.join(' · '):memory.text;
+}
+function addStoredDecorations(){ memories.filter(memory=>memory.decor&&memory.decor!=='rest'&&!memory.rewardStored).forEach((m,i)=>addDecoration(m.decor,i,false,decorationMemoryText(m),`memory-${m.date||i}`,m.flowerColor)); }
 addStoredDecorations();
 function settleGroundDecorations(){
   for(let pass=0;pass<5;pass++){
@@ -955,14 +993,29 @@ function formatMemoryTimestamp(value){
   const displayHour=hour%12||12;
   return `${date.getMonth()+1}월 ${date.getDate()}일 ${period} ${displayHour}:${String(date.getMinutes()).padStart(2,'0')}`;
 }
+function grapeDotsHTML(count,animateLast=false){
+  return Array.from({length:7},(_,index)=>`<i class="grape-dot${index<count?' filled':''}${animateLast&&index===count-1?' just-added':''}" aria-hidden="true"></i>`).join('');
+}
+function saveGrapeProgress(){
+  persistLocal(GRAPE_PROGRESS_KEY,String(grapeProgress));
+  persistLocal(COMPLETED_BUNCHES_KEY,String(completedBunches));
+  persistLocal(GRAPE_MIGRATION_KEY,'1');
+}
 
 function renderRecords(){
-  const total = memories.length; countEl.innerHTML=`${String(total).padStart(2,'0')} <small>/ 31</small>`; progressFill.style.width=`${Math.min(total/31*100,100)}%`;
-  const decorCount=memories.filter(memory=>memory.kind!=='rest').length;
+  const total = memories.length;
+  countEl.innerHTML=`${grapeProgress} <small>/ 7</small>`;
+  grapeBunch.innerHTML=grapeDotsHTML(grapeProgress);
+  grapeBunch.setAttribute('aria-label',`포도알 7개 중 ${grapeProgress}개`);
+  const remaining=7-grapeProgress;
+  grapeNextCopy.textContent=grapeProgress?`${remaining}개의 잘한 일을 더 찾으면 새로운 장식이 와요.`:'새로운 포도송이를 천천히 채워 볼까요?';
+  completedBunchesEl.textContent=`완성한 포도송이 ${completedBunches}개`;
+  const decorCount=memories.filter(memory=>memory.decor&&memory.decor!=='rest').length;
   previewCount.textContent=`기록 ${String(total).padStart(2,'0')}개 · 장식 ${String(decorCount).padStart(2,'0')}개`;
   if(memories[0]) todayPreview.innerHTML=memories[0].text.replace(/(.{17})/g,'$1<br>');
-  const shown = memories.slice(0,3).map(m=>`<li><span class="memory-dot ${m.kind==='rest'?'rest':m.decor}">${m.kind==='rest'?'☁':DECOR_INFO[m.decor]?.icon||'✦'}</span><div><b>${escapeHTML(m.text)}</b><small>${formatMemoryTimestamp(m.date)}</small></div></li>`).join('');
+  const shown = memories.slice(0,3).map(m=>`<li><span class="memory-dot ${m.kind==='rest'?'rest':m.decor||'grape'}">${m.kind==='rest'?'☁':m.decor?DECOR_INFO[m.decor]?.icon||'✦':'🍇'}</span><div><b>${escapeHTML(m.text)}</b><small>${formatMemoryTimestamp(m.date)}</small></div></li>`).join('');
   recentList.innerHTML=shown||'<li class="recent-empty"><span class="memory-dot">✦</span><div><b>오늘의 첫 장면을 남겨 보세요</b><small>한 줄이면 충분해요</small></div></li>';
+  inventoryCount.textContent=memories.filter(memory=>memory.decor&&memory.rewardStored).length;
 }
 function escapeHTML(text){ const el=document.createElement('div');el.textContent=text;return el.innerHTML; }
 renderRecords();
@@ -990,6 +1043,79 @@ function renderRoutine(){
   }
 }
 renderRoutine();
+
+const PRAISE_MESSAGES={
+  care:['나를 돌보는 선택을 해냈네요. 오늘의 나에게 다정한 박수를 보내요.','작은 돌봄도 분명한 잘함이에요. 오늘을 잘 챙겼어요.'],
+  growth:['한 걸음 나아간 오늘의 내가 멋져요. 작은 시작도 충분히 반짝여요.','어제보다 조금 자란 순간을 발견했네요. 정말 잘했어요.'],
+  relation:['따뜻한 마음을 건넨 순간이네요. 그 마음이 오늘을 더 환하게 만들었어요.','누군가와 이어진 오늘의 용기가 참 다정해요.'],
+  rest:['멈추고 쉬어가는 것도 나를 지키는 멋진 선택이에요.','오늘의 쉼이 내일의 나를 도와줄 거예요. 충분히 잘했어요.']
+};
+function praiseFor(memory){
+  const messages=PRAISE_MESSAGES[memory.kind==='rest'?'rest':memory.theme]||PRAISE_MESSAGES.care;
+  return messages[memories.length%messages.length];
+}
+function nextGiftType(){
+  const owned=new Set(memories.map(memory=>memory.decor).filter(decor=>decor&&decor!=='rest'));
+  const unowned=SHARE_DECOR_TYPES.filter(type=>!owned.has(type));
+  const pool=unowned.length?unowned:SHARE_DECOR_TYPES;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function closeReward(){
+  rewardBackdrop.classList.remove('open');
+  rewardBackdrop.setAttribute('aria-hidden','true');
+  pendingRewardMemoryDate=null;
+}
+function openGrapeReward(memory,bunchCompleted){
+  pendingRewardMemoryDate=memory.date;
+  document.querySelector('#reward-title').innerHTML=bunchCompleted?'포도송이가<br /><em>통통하게 완성됐어요!</em>':'오늘의 포도알이<br /><em>톡! 붙었어요</em>';
+  rewardPraise.textContent=praiseFor(memory);
+  rewardBunch.innerHTML=grapeDotsHTML(bunchCompleted?7:grapeProgress,true);
+  rewardProgressText.textContent=bunchCompleted?'7개의 잘한 내가 한 송이에 담겼어요.':`이번 포도송이 ${grapeProgress} / 7`;
+  rewardGift.hidden=!bunchCompleted;
+  rewardContinueButton.hidden=bunchCompleted;
+  rewardStoreButton.hidden=!bunchCompleted;
+  rewardPlaceButton.hidden=!bunchCompleted;
+  if(bunchCompleted){
+    const info=DECOR_INFO[memory.decor];
+    rewardGiftImage.src=decorThumbnail(memory.decor);
+    rewardGiftImage.alt=`${info.label} 장식`;
+    rewardGiftName.textContent=info.label;
+  }
+  rewardBackdrop.classList.add('open');
+  rewardBackdrop.setAttribute('aria-hidden','false');
+  setTimeout(()=>bunchCompleted?rewardPlaceButton.focus():rewardContinueButton.focus(),180);
+}
+function placeReward(memory,animate=true){
+  if(!memory?.decor||memory.decor==='rest'||!memory.rewardStored) return;
+  memory.rewardStored=false;
+  saveAllData();
+  const activeCount=memories.filter(item=>item.decor&&item.decor!=='rest'&&!item.rewardStored).length;
+  addDecoration(memory.decor,Math.max(0,activeCount-1),animate,decorationMemoryText(memory),`memory-${memory.date}`,memory.flowerColor);
+  renderRecords();
+}
+function renderInventory(){
+  const stored=memories.filter(memory=>memory.decor&&memory.decor!=='rest'&&memory.rewardStored);
+  inventoryList.innerHTML=stored.length?stored.map(memory=>{
+    const info=DECOR_INFO[memory.decor];
+    const count=memory.rewardMemoryDates?.length||1;
+    return `<article class="inventory-item"><img src="${decorThumbnail(memory.decor)}" alt="" /><div><b>${info.label}</b><small>${count}개의 잘한 일이 담긴 장식</small></div>${isSharedHome?'':`<button type="button" data-place-reward="${memory.date}">집에 놓기</button>`}</article>`;
+  }).join(''):'<p class="inventory-empty">보관 중인 장식이 없어요.<br />포도알 7개를 모으면 새로운 장식이 찾아옵니다.</p>';
+}
+function openInventory(){
+  renderInventory();
+  inventoryBackdrop.classList.add('open');
+  inventoryBackdrop.setAttribute('aria-hidden','false');
+}
+function closeInventory(){ inventoryBackdrop.classList.remove('open'); inventoryBackdrop.setAttribute('aria-hidden','true'); }
+rewardContinueButton.addEventListener('click',closeReward);
+rewardStoreButton.addEventListener('click',()=>{ closeReward(); showCaptureNotice('장식을 보관했어요','언제든 장식 보관함에서 집에 놓을 수 있어요.'); });
+rewardPlaceButton.addEventListener('click',()=>{ const memory=memories.find(item=>item.date===pendingRewardMemoryDate); placeReward(memory); closeReward(); showCaptureNotice('새 장식을 집에 놓았어요','장식을 끌어서 원하는 곳으로 옮겨 보세요.'); });
+document.querySelector('#close-grape-reward').addEventListener('click',closeReward);
+rewardBackdrop.addEventListener('click',event=>{ if(event.target===rewardBackdrop) closeReward(); });
+document.querySelector('#open-inventory').addEventListener('click',openInventory);
+document.querySelector('#close-inventory').addEventListener('click',closeInventory);
+inventoryBackdrop.addEventListener('click',event=>{ if(event.target===inventoryBackdrop) closeInventory(); });
+inventoryList.addEventListener('click',event=>{ const button=event.target.closest('[data-place-reward]'); if(!button) return; const memory=memories.find(item=>item.date===button.dataset.placeReward); placeReward(memory); renderInventory(); showCaptureNotice('장식을 집에 놓았어요','장식을 끌어서 원하는 곳으로 옮겨 보세요.'); });
 
 function memoryWeekKey(value){
   const date=new Date(value);
@@ -1028,6 +1154,7 @@ function saveAllData(){
   persistLocal(DECOR_LAYOUT_KEY,JSON.stringify(decorLayout));
   persistLocal(STREAK_START_KEY,streakStartDate);
   persistLocal(HOUSE_NAME_KEY,houseName);
+  saveGrapeProgress();
 }
 function openManager(){
   editingMemoryDate=null;
@@ -1083,8 +1210,13 @@ function resetHome(){
   localStorage.removeItem(STREAK_START_KEY);
   localStorage.removeItem(HOUSE_NAME_KEY);
   localStorage.removeItem(ROUTINE_THEME_KEY);
+  localStorage.removeItem(GRAPE_PROGRESS_KEY);
+  localStorage.removeItem(COMPLETED_BUNCHES_KEY);
+  localStorage.removeItem(GRAPE_MIGRATION_KEY);
   selectedDecor='flower';
   routineTheme='care';
+  grapeProgress=0;
+  completedBunches=0;
   houseNameText.textContent=`${houseName}네 집`;
   houseNameInput.value=houseName;
   drawNameplate();
@@ -1179,18 +1311,37 @@ document.querySelector('#card-entry').addEventListener('click',openModal);
 document.querySelector('#close-entry').addEventListener('click',closeModal);
 modal.addEventListener('click',e=>{ if(e.target===modal) closeModal(); });
 decorOptions.addEventListener('click',event=>{ const button=event.target.closest('.decor-option'); if(!button) return; selectedDecor=button.dataset.decor; renderDecorOptions(); });
-document.querySelector('#save-memory').addEventListener('click',()=>{
-  const text=input.value.trim();
-  if(!text){ input.focus(); input.placeholder='오늘의 잘한 일을 한 줄로 적어 주세요 :)'; return; }
-  const flowerColor=selectedDecor==='flower'?randomFlowerColor():null;
-  const memory={text,decor:selectedDecor,date:new Date().toISOString(),flowerColor,theme:routineTheme};
+function recordMemory(text,kind='win'){
+  const memory={text,decor:kind==='rest'?'rest':null,kind:kind==='rest'?'rest':undefined,date:new Date().toISOString(),theme:routineTheme};
   memories.unshift(memory);
+  grapeProgress+=1;
+  let bunchCompleted=false;
+  if(grapeProgress>=7){
+    bunchCompleted=true;
+    grapeProgress=0;
+    completedBunches+=1;
+    memory.decor=nextGiftType();
+    memory.flowerColor=memory.decor==='flower'?randomFlowerColor():null;
+    memory.rewardStored=true;
+    memory.rewardMemoryDates=memories.slice(0,7).map(item=>item.date);
+  }
   if(!streakStartDate){
     streakStartDate=localDateString(new Date(memory.date));
     persistLocal(STREAK_START_KEY,streakStartDate);
     updateStreak();
   }
-  persistLocal(STORAGE_KEY,JSON.stringify(memories)); addDecoration(selectedDecor,memories.length,true,text,`memory-${memory.date}`,flowerColor); renderRecords(); renderRoutine(); input.value=''; closeModal(); toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),3600);
+  saveAllData();
+  renderRecords();
+  renderRoutine();
+  return {memory,bunchCompleted};
+}
+document.querySelector('#save-memory').addEventListener('click',()=>{
+  const text=input.value.trim();
+  if(!text){ input.focus(); input.placeholder='오늘의 잘한 일을 한 줄로 적어 주세요 :)'; return; }
+  const result=recordMemory(text);
+  input.value='';
+  closeModal();
+  openGrapeReward(result.memory,result.bunchCompleted);
 });
 input.addEventListener('keydown',e=>{ if(e.key==='Enter') document.querySelector('#save-memory').click(); });
 function useQuickPrompt(prompt){
@@ -1215,13 +1366,8 @@ function saveRestDay(){
     showCaptureNotice('오늘의 휴식을 이미 남겼어요','오늘은 그 자체로 충분히 잘하고 있어요.');
     return;
   }
-  const memory={text:'오늘은 충분히 쉬었다',decor:'rest',kind:'rest',date:new Date().toISOString(),theme:routineTheme};
-  memories.unshift(memory);
-  if(!streakStartDate){ streakStartDate=today; persistLocal(STREAK_START_KEY,streakStartDate); updateStreak(); }
-  persistLocal(STORAGE_KEY,JSON.stringify(memories));
-  renderRecords();
-  renderRoutine();
-  showCaptureNotice('휴식도 따뜻한 기록이에요','오늘은 장식 없이, 편안히 쉬어 갈게요.');
+  const result=recordMemory('오늘은 충분히 쉬었다','rest');
+  openGrapeReward(result.memory,result.bunchCompleted);
 }
 saveRestDayButton.addEventListener('click',saveRestDay);
 openWeeklyReflectionButton.addEventListener('click',()=>{ openManager(); setTimeout(()=>weeklyLetter.scrollIntoView({block:'center'}),100); });
