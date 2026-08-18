@@ -218,6 +218,7 @@ function packSharedHome(){
     g:[grapeProgress,completedBunches],
     i:Object.entries(interiorLayout).filter(([,item])=>item?.placed).map(([type,item])=>[type,Math.round((item.x||0)*100),Math.round((item.z||0)*100)]),
     o:Math.round(interiorOrbitTargetAngle*1000),
+    q:Math.round(interiorZoomTarget*1000),
     w:[Math.round(world.rotation.y*1000),Math.round(camera.position.y*100)]
   };
 }
@@ -244,7 +245,7 @@ function unpackSharedHome(data){
   });
   const interiorLayout={};
   if(Array.isArray(data.i)) data.i.forEach(([type,x,z])=>{ if(typeof type==='string'&&Number.isFinite(x)&&Number.isFinite(z)) interiorLayout[type]={placed:true,x:x/100,z:z/100}; });
-  return {memories,streakStartDate:data.s||'',houseName:data.n,decorLayout,interiorLayout,interiorViewAngle:Number.isFinite(data.o)?data.o/1000:0,grapeProgress:Array.isArray(data.g)?Number(data.g[0])||0:memories.length%7,completedBunches:Array.isArray(data.g)?Number(data.g[1])||0:Math.floor(memories.length/7),view:{rotation:(data.w?.[0]??440)/1000,cameraHeight:(data.w?.[1]??630)/100}};
+  return {memories,streakStartDate:data.s||'',houseName:data.n,decorLayout,interiorLayout,interiorViewAngle:Number.isFinite(data.o)?data.o/1000:0,interiorViewZoom:Number.isFinite(data.q)?data.q/1000:1,grapeProgress:Array.isArray(data.g)?Number(data.g[0])||0:memories.length%7,completedBunches:Array.isArray(data.g)?Number(data.g[1])||0:Math.floor(memories.length/7),view:{rotation:(data.w?.[0]??440)/1000,cameraHeight:(data.w?.[1]??630)/100}};
 }
 function encodeSharedHome(data){
   const packed=window.LZString?.compressToEncodedURIComponent(JSON.stringify(data));
@@ -896,7 +897,7 @@ interiorRenderer.shadowMap.enabled=true;
 interiorRenderer.shadowMap.type=THREE.PCFSoftShadowMap;
 interiorRenderer.outputColorSpace=THREE.SRGBColorSpace;
 const interiorScene=new THREE.Scene();
-const interiorPalette={background:0xf5cd58,wall:palette.wall,wallShade:0xffe8b6,trim:palette.trim,roof:palette.roof,wood:palette.wood,floor:0xd89a55,floorLine:0xb87143,glass:palette.glass,blue:palette.blue,leaf:palette.leaf,pot:palette.pot,path:palette.path,cream:palette.cream,pink:palette.pink};
+const interiorPalette={background:0xf5cd58,wall:palette.wall,wallShade:0xffe8b6,trim:palette.trim,roof:palette.roof,wood:palette.wood,floor:0xd89a55,floorLine:0xb87143,glass:palette.glass,blue:palette.blue,leaf:palette.leaf,lawn:palette.lawn,pot:palette.pot,path:palette.path,cream:palette.cream,pink:palette.pink};
 interiorScene.background=new THREE.Color(interiorPalette.background);
 const interiorCamera=new THREE.PerspectiveCamera(40,1,.1,60);
 interiorCamera.position.set(0,4.9,10.8);
@@ -932,6 +933,35 @@ iCylinder(.12,.12,.22,interiorPalette.wood,new THREE.Vector3(0,4.73,-.9));
 const wallArt=iBox(1.5,1.05,.10,interiorPalette.wood,new THREE.Vector3(3.4,2.7,INTERIOR_BACK_Z+.18));
 iBox(1.28,.83,.04,interiorPalette.cream,new THREE.Vector3(3.4,2.7,INTERIOR_BACK_Z+.26));
 iMesh(new THREE.CircleGeometry(.25,24),interiorPalette.pink,new THREE.Vector3(3.25,2.78,INTERIOR_BACK_Z+.31)).rotation.y=0;
+
+// The front wall keeps the room enclosed while the open doorway frames the garden outside.
+const INTERIOR_FRONT_Z=INTERIOR_ROOM_DEPTH/2,INTERIOR_DOOR_WIDTH=1.8,INTERIOR_DOOR_HEIGHT=2.8;
+const interiorFrontSideWidth=(INTERIOR_ROOM_WIDTH-INTERIOR_DOOR_WIDTH)/2;
+iBox(interiorFrontSideWidth,5,.22,interiorPalette.wall,new THREE.Vector3(-(INTERIOR_DOOR_WIDTH+interiorFrontSideWidth)/2,2.5,INTERIOR_FRONT_Z));
+iBox(interiorFrontSideWidth,5,.22,interiorPalette.wall,new THREE.Vector3((INTERIOR_DOOR_WIDTH+interiorFrontSideWidth)/2,2.5,INTERIOR_FRONT_Z));
+iBox(INTERIOR_DOOR_WIDTH,5-INTERIOR_DOOR_HEIGHT,.22,interiorPalette.wall,new THREE.Vector3(0,INTERIOR_DOOR_HEIGHT+(5-INTERIOR_DOOR_HEIGHT)/2,INTERIOR_FRONT_Z));
+iBox(.16,INTERIOR_DOOR_HEIGHT+.15,.34,interiorPalette.trim,new THREE.Vector3(-INTERIOR_DOOR_WIDTH/2,INTERIOR_DOOR_HEIGHT/2,INTERIOR_FRONT_Z-.03));
+iBox(.16,INTERIOR_DOOR_HEIGHT+.15,.34,interiorPalette.trim,new THREE.Vector3(INTERIOR_DOOR_WIDTH/2,INTERIOR_DOOR_HEIGHT/2,INTERIOR_FRONT_Z-.03));
+iBox(INTERIOR_DOOR_WIDTH+.16,.16,.34,interiorPalette.trim,new THREE.Vector3(0,INTERIOR_DOOR_HEIGHT,INTERIOR_FRONT_Z-.03));
+const interiorDoorPivot=new THREE.Group(); interiorDoorPivot.position.set(-INTERIOR_DOOR_WIDTH/2,.05,INTERIOR_FRONT_Z+.02); interiorDoorPivot.rotation.y=-Math.PI*.39; interiorRoom.add(interiorDoorPivot);
+iBox(INTERIOR_DOOR_WIDTH-.12,INTERIOR_DOOR_HEIGHT-.12,.16,interiorPalette.wood,new THREE.Vector3((INTERIOR_DOOR_WIDTH-.12)/2,(INTERIOR_DOOR_HEIGHT-.12)/2,0),interiorDoorPivot);
+iBox(1.08,.07,.04,interiorPalette.trim,new THREE.Vector3(.84,1.9,-.1),interiorDoorPivot);
+iBox(1.08,.07,.04,interiorPalette.trim,new THREE.Vector3(.84,.78,-.1),interiorDoorPivot);
+iMesh(new THREE.SphereGeometry(.09,12,10),0xf6ca4d,new THREE.Vector3(1.42,1.38,-.12),interiorDoorPivot);
+
+const doorwayGarden=new THREE.Group(); interiorScene.add(doorwayGarden);
+const outsideLawn=iMesh(new THREE.CylinderGeometry(6.2,6.45,.28,48),interiorPalette.lawn,new THREE.Vector3(0,-.16,9),doorwayGarden); outsideLawn.scale.z=.72;
+for(let index=0;index<6;index++){
+  const pathStone=iMesh(new THREE.SphereGeometry(.48-index*.025,16,10),interiorPalette.path,new THREE.Vector3(Math.sin(index*.6)*.22,.04,5.85+index*.75),doorwayGarden);
+  pathStone.scale.set(1.12,.18,.76); pathStone.rotation.y=index*.2;
+}
+iCylinder(.18,.23,1.35,interiorPalette.wood,new THREE.Vector3(1.65,.63,7.25),doorwayGarden);
+iMesh(new THREE.SphereGeometry(.9,18,14),interiorPalette.leaf,new THREE.Vector3(1.65,1.65,7.25),doorwayGarden);
+iMesh(new THREE.SphereGeometry(.62,18,14),0x6c9f60,new THREE.Vector3(1.15,1.48,7.18),doorwayGarden);
+iMesh(new THREE.SphereGeometry(.6,18,14),0x6c9f60,new THREE.Vector3(2.15,1.5,7.2),doorwayGarden);
+iCylinder(.1,.13,1.05,interiorPalette.wood,new THREE.Vector3(-1.45,.46,7.05),doorwayGarden);
+iBox(.78,.65,.35,interiorPalette.blue,new THREE.Vector3(-1.45,1.12,7.05),doorwayGarden);
+iBox(.85,.12,.45,interiorPalette.roof,new THREE.Vector3(-1.45,1.48,7.05),doorwayGarden);
 
 const interiorFurniture=new THREE.Group(); interiorScene.add(interiorFurniture);
 function markInteriorItem(group,type){ group.userData.interiorType=type; group.userData.radius=INTERIOR_ITEMS[type].radius; group.traverse(child=>{ if(child.isMesh) child.userData.interiorRoot=group; }); return group; }
@@ -987,6 +1017,7 @@ function rebuildInterior(){
 }
 let selectedInteriorItem=null,draggingInteriorItem=null,interiorMoved=false,rotatingInterior=false,interiorRotateStartX=0;
 let interiorOrbitAngle=Number(sharedHome?.interiorViewAngle??interiorLayout.viewAngle)||0,interiorOrbitTargetAngle=interiorOrbitAngle,interiorRotateStartAngle=interiorOrbitAngle;
+let interiorZoom=THREE.MathUtils.clamp(Number(sharedHome?.interiorViewZoom??interiorLayout.viewZoom)||1,.8,1.5),interiorZoomTarget=interiorZoom,interiorZoomSaveTimer=null;
 const interiorRaycaster=new THREE.Raycaster(),interiorPointer=new THREE.Vector2(),interiorDragPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),interiorDragPoint=new THREE.Vector3(),interiorDragOffset=new THREE.Vector3(),interiorLastValid=new THREE.Vector3();
 function setInteriorRay(event){ const rect=interiorCanvas.getBoundingClientRect(); interiorPointer.x=((event.clientX-rect.left)/rect.width)*2-1; interiorPointer.y=-((event.clientY-rect.top)/rect.height)*2+1; interiorRaycaster.setFromCamera(interiorPointer,interiorCamera); }
 function interiorItemAt(event){ setInteriorRay(event); const hit=interiorRaycaster.intersectObjects([...interiorObjects.values()],true)[0]; return hit?.object?.userData?.interiorRoot||null; }
@@ -1021,17 +1052,26 @@ function finishInteriorDrag(){
 }
 interiorCanvas.addEventListener('pointerup',finishInteriorDrag);
 interiorCanvas.addEventListener('pointercancel',finishInteriorDrag);
+interiorCanvas.addEventListener('wheel',event=>{
+  event.preventDefault();
+  interiorZoomTarget=THREE.MathUtils.clamp(interiorZoomTarget+event.deltaY*.0011,.8,1.5);
+  clearTimeout(interiorZoomSaveTimer);
+  interiorZoomSaveTimer=setTimeout(()=>{ interiorLayout.viewZoom=interiorZoomTarget; saveInteriorLayout(); },140);
+},{passive:false});
 interiorOptions.addEventListener('click',event=>{ const button=event.target.closest('[data-interior-item]'); if(button) placeInteriorItem(button.dataset.interiorItem); });
 storeInteriorItemButton.addEventListener('click',()=>{
   if(!selectedInteriorItem||isSharedHome) return;
   const type=selectedInteriorItem.userData.interiorType; interiorFurniture.remove(selectedInteriorItem); interiorObjects.delete(type); interiorLayout[type]={placed:false}; saveInteriorLayout(); setInteriorSelection(null); renderInteriorOptions();
 });
-function resizeInterior(){ const width=interiorCanvas.clientWidth,height=interiorCanvas.clientHeight; if(!width||!height) return; interiorRenderer.setSize(width,height,false); interiorCamera.aspect=width/height; interiorCamera.fov=width<760?54:48; interiorCamera.updateProjectionMatrix(); }
+function resizeInterior(){ const width=interiorCanvas.clientWidth,height=interiorCanvas.clientHeight; if(!width||!height) return; interiorRenderer.setSize(width,height,false); interiorCamera.aspect=width/height; interiorCamera.updateProjectionMatrix(); }
 function interiorFrame(){
   if(interiorView.classList.contains('open')){
     resizeInterior();
     interiorOrbitAngle+=(interiorOrbitTargetAngle-interiorOrbitAngle)*.11;
+    interiorZoom+=(interiorZoomTarget-interiorZoom)*.12;
     const narrow=interiorCanvas.clientWidth<760;
+    interiorCamera.fov=(narrow?54:48)*interiorZoom;
+    interiorCamera.updateProjectionMatrix();
     interiorCamera.position.set(Math.sin(interiorOrbitAngle)*(narrow?4.35:4.8),narrow?3.8:3.55,Math.cos(interiorOrbitAngle)*(narrow?3.75:4.2)-.15);
     interiorCamera.lookAt(0,1.2,-.2);
     interiorRenderer.render(interiorScene,interiorCamera);
@@ -1043,7 +1083,7 @@ function enterInterior(){
   interiorHouseName.textContent=`${houseName}네 집`;
   rebuildInterior();
   interiorView.classList.add('open'); interiorView.setAttribute('aria-hidden','false'); document.body.classList.add('interior-open'); resizeInterior();
-  showCaptureNotice('거실 문이 열렸어요!','빈 공간을 끌면 360°로 둘러보고, 얻은 가구는 직접 옮길 수 있어요.');
+  showCaptureNotice('거실 문이 열렸어요!','빈 공간은 360°로 끌고, 마우스 휠로 더 넓게 축소해 볼 수 있어요.');
 }
 function leaveInterior(){ interiorView.classList.remove('open'); interiorView.setAttribute('aria-hidden','true'); document.body.classList.remove('interior-open'); setInteriorSelection(null); doorOpen=false; doorTargetRotation=0; warmInterior.visible=false; }
 document.querySelector('#leave-interior').addEventListener('click',leaveInterior);
@@ -1411,6 +1451,10 @@ function resetHome(){
   routineTheme='care';
   grapeProgress=0;
   completedBunches=0;
+  interiorOrbitAngle=0;
+  interiorOrbitTargetAngle=0;
+  interiorZoom=1;
+  interiorZoomTarget=1;
   houseNameText.textContent=`${houseName}네 집`;
   houseNameInput.value=houseName;
   interiorHouseName.textContent=`${houseName}네 집`;
