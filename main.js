@@ -333,16 +333,10 @@ const roofCap = mesh(new THREE.CylinderGeometry(.22,.29,.52,20),mat(palette.wood
 // front door and windows
 const frontFacade=new THREE.Group(); world.add(frontFacade);
 const warmInterior = new THREE.Group(); warmInterior.visible=false; world.add(warmInterior);
-// A small three-dimensional room sits behind the open doorway.
-const interiorFloor=box(1.03,.08,2.38,0x704838,new THREE.Vector3(0,.12,.67),warmInterior);
-const interiorBackWall=box(1.02,2.24,.09,0xc88362,new THREE.Vector3(0,1.17,-.52),warmInterior);
-const interiorRug=mesh(new THREE.CircleGeometry(.34,24),mat(0x7fa5a0),new THREE.Vector3(0,.17,.56),warmInterior); interiorRug.rotation.x=-Math.PI/2;
-const sofa=box(.72,.47,.28,0x6c8f89,new THREE.Vector3(-.05,.4,-.18),warmInterior);
-box(.78,.10,.34,0xb2d0be,new THREE.Vector3(-.05,.68,-.18),warmInterior);
-const table=box(.36,.28,.28,0x6f4739,new THREE.Vector3(.26,.34,.5),warmInterior);
-mesh(new THREE.CylinderGeometry(.15,.17,.06,16),mat(0xf3c45f),new THREE.Vector3(.26,.52,.5),warmInterior);
-const lampStand=cylinder(.025,.025,.54,0x705044,new THREE.Vector3(.34,.63,-.28),warmInterior);
-const lampShade=mesh(new THREE.ConeGeometry(.16,.22,16,1,true),mat(0xffdf81),new THREE.Vector3(.34,.99,-.28),warmInterior); lampShade.rotation.x=Math.PI;
+// A miniature of the actual living room sits behind the open doorway.
+box(1.03,.08,2.38,0xd89a55,new THREE.Vector3(0,.12,.67),warmInterior);
+box(1.02,2.24,.09,palette.wall,new THREE.Vector3(0,1.17,-.52),warmInterior);
+const doorwayInteriorFurniture=new THREE.Group(); warmInterior.add(doorwayInteriorFurniture);
 const picture=box(.38,.30,.035,0x8e5948,new THREE.Vector3(-.12,1.58,-.46),warmInterior);
 box(.28,.20,.02,0x9fc8ba,new THREE.Vector3(-.12,1.58,-.43),warmInterior);
 const doorPivot=new THREE.Group(); doorPivot.position.set(-.54,.08,2.04); world.add(doorPivot);
@@ -808,6 +802,7 @@ function toggleDoor(){
   if(doorOpen&&completedBunches>=INTERIOR_UNLOCK_BUNCHES){ enterInterior(); return; }
   doorOpen=!doorOpen;
   doorTargetRotation=doorOpen?OPEN_DOOR_ANGLE:0;
+  if(doorOpen) syncDoorwayInterior();
   warmInterior.visible=doorOpen;
   if(doorOpen&&completedBunches>=INTERIOR_UNLOCK_BUNCHES) setTimeout(()=>{ if(doorOpen) enterInterior(); },360);
   else if(doorOpen){
@@ -988,6 +983,40 @@ function createInteriorItem(type){
     iBox(.22,.56,.3,interiorPalette.roof,new THREE.Vector3(-.36,1.39,0),group); iBox(.18,.45,.3,interiorPalette.blue,new THREE.Vector3(-.1,1.34,0),group); iBox(.25,.63,.3,interiorPalette.trim,new THREE.Vector3(.18,1.43,0),group);
   }
   return markInteriorItem(group,type);
+}
+function createDoorwayInteriorItem(type){
+  const group=new THREE.Group(); doorwayInteriorFurniture.add(group);
+  const miniBox=(x,y,z,color,px=0,py=0,pz=0)=>box(x,y,z,color,new THREE.Vector3(px,py,pz),group);
+  const miniCylinder=(rt,rb,h,color,px=0,py=0,pz=0)=>cylinder(rt,rb,h,color,new THREE.Vector3(px,py,pz),group);
+  if(type==='sofa'){
+    miniBox(.36,.09,.15,palette.blue,0,.055,0);
+    miniBox(.36,.14,.05,0x4f8ea1,0,.13,-.055);
+    miniBox(.05,.12,.17,0x4f8ea1,-.18,.08,0); miniBox(.05,.12,.17,0x4f8ea1,.18,.08,0);
+    miniBox(.12,.035,.09,0xaed6d8,-.075,.115,0); miniBox(.12,.035,.09,0xaed6d8,.075,.115,0);
+  } else if(type==='rug'){
+    const rug=mesh(new THREE.CylinderGeometry(.25,.25,.018,28),mat(palette.roof),new THREE.Vector3(0,.012,0),group); rug.scale.z=.68;
+  } else if(type==='lamp'){
+    miniCylinder(.055,.065,.025,palette.wood,0,.015,0); miniCylinder(.009,.009,.31,palette.wood,0,.17,0);
+    const shade=mesh(new THREE.ConeGeometry(.08,.1,16,1,true),mat(palette.path),new THREE.Vector3(0,.31,0),group); shade.rotation.x=Math.PI;
+  } else if(type==='plant'){
+    miniCylinder(.06,.047,.1,palette.pot,0,.05,0); miniCylinder(.009,.011,.13,palette.leaf,0,.15,0);
+    [[-.045,.2,0],[.042,.225,0],[-.01,.255,0],[.05,.18,0]].forEach(([x,y,z],index)=>{ const leaf=sphere(.05,index%2?0x6c9f60:palette.leaf,new THREE.Vector3(x,y,z),group); leaf.scale.set(.55,1,.4); });
+  } else if(type==='shelf'){
+    [0,.14,.28].forEach(y=>miniBox(.25,.022,.08,palette.wood,0,y+.02,0));
+    miniBox(.022,.34,.08,0x805038,-.112,.17,0); miniBox(.022,.34,.08,0x805038,.112,.17,0);
+    miniBox(.035,.09,.05,palette.roof,-.055,.215,0); miniBox(.03,.075,.05,palette.blue,0,.208,0); miniBox(.04,.1,.05,palette.trim,.05,.22,0);
+  }
+  return group;
+}
+function syncDoorwayInterior(){
+  while(doorwayInteriorFurniture.children.length) doorwayInteriorFurniture.remove(doorwayInteriorFurniture.children[0]);
+  Object.entries(INTERIOR_ITEMS).forEach(([type,item])=>{
+    const saved=interiorLayout[type];
+    if(!saved?.placed||!isInteriorItemUnlocked(type)) return;
+    const x=Number.isFinite(saved.x)?saved.x:item.start[0],z=Number.isFinite(saved.z)?saved.z:item.start[1];
+    const miniature=createDoorwayInteriorItem(type);
+    miniature.position.set(THREE.MathUtils.clamp(x,-5.3,5.3)*.075,.17,-.42+(THREE.MathUtils.clamp(z,-4.55,4.55)+4.55)*.202);
+  });
 }
 const interiorObjects=new Map();
 function saveInteriorLayout(){ persistLocal(INTERIOR_LAYOUT_KEY,JSON.stringify(interiorLayout)); }
