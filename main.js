@@ -910,27 +910,28 @@ function iMesh(geometry,color,position,parent=interiorRoom){ const item=new THRE
 function iBox(x,y,z,color,position,parent=interiorRoom){ return iMesh(new THREE.BoxGeometry(x,y,z),color,position,parent); }
 function iCylinder(rt,rb,h,color,position,parent=interiorRoom){ return iMesh(new THREE.CylinderGeometry(rt,rb,h,24),color,position,parent); }
 
-// A complete toy-sized room replaces the doorway view after the third bunch.
-iBox(12,.22,8,interiorPalette.floor,new THREE.Vector3(0,-.11,-.25));
-for(let z=-4;z<3.7;z+=.8) iBox(11.8,.018,.025,interiorPalette.floorLine,new THREE.Vector3(0,.015,z));
-iBox(12,5,.22,interiorPalette.wall,new THREE.Vector3(0,2.5,-4));
-iBox(.22,5,8,interiorPalette.wallShade,new THREE.Vector3(-6,2.5,-.1));
-iBox(.22,5,8,interiorPalette.wallShade,new THREE.Vector3(6,2.5,-.1));
-iBox(12,.13,.18,interiorPalette.trim,new THREE.Vector3(0,.11,-3.84));
-iBox(.16,2.05,.10,interiorPalette.cream,new THREE.Vector3(-2.35,2.65,-3.84));
-iBox(.16,2.05,.10,interiorPalette.cream,new THREE.Vector3(.15,2.65,-3.84));
-iBox(2.65,.16,.10,interiorPalette.cream,new THREE.Vector3(-1.1,2.65,-3.84));
-iBox(2.65,.16,.10,interiorPalette.cream,new THREE.Vector3(-1.1,3.62,-3.84));
-const windowGlass=iBox(2.35,1.8,.05,interiorPalette.glass,new THREE.Vector3(-1.1,2.65,-3.77)); windowGlass.material.roughness=.38;
-iBox(.13,2.05,.10,interiorPalette.cream,new THREE.Vector3(-1.1,2.65,-3.71));
-iBox(2.65,.13,.10,interiorPalette.cream,new THREE.Vector3(-1.1,2.65,-3.71));
-iBox(.58,2.45,.22,interiorPalette.roof,new THREE.Vector3(-2.78,2.55,-3.65));
-iBox(.58,2.45,.22,interiorPalette.roof,new THREE.Vector3(.58,2.55,-3.65));
+// Match the room footprint to the exterior house ratio (5.25 wide × 4.45 deep).
+const INTERIOR_ROOM_WIDTH=12,INTERIOR_ROOM_DEPTH=10.2,INTERIOR_BACK_Z=-INTERIOR_ROOM_DEPTH/2;
+iBox(INTERIOR_ROOM_WIDTH,.22,INTERIOR_ROOM_DEPTH,interiorPalette.floor,new THREE.Vector3(0,-.11,0));
+for(let z=INTERIOR_BACK_Z+.1;z<INTERIOR_ROOM_DEPTH/2;z+=.8) iBox(INTERIOR_ROOM_WIDTH-.2,.018,.025,interiorPalette.floorLine,new THREE.Vector3(0,.015,z));
+iBox(INTERIOR_ROOM_WIDTH,5,.22,interiorPalette.wall,new THREE.Vector3(0,2.5,INTERIOR_BACK_Z));
+iBox(.22,5,INTERIOR_ROOM_DEPTH,interiorPalette.wallShade,new THREE.Vector3(-INTERIOR_ROOM_WIDTH/2,2.5,0));
+iBox(.22,5,INTERIOR_ROOM_DEPTH,interiorPalette.wallShade,new THREE.Vector3(INTERIOR_ROOM_WIDTH/2,2.5,0));
+iBox(INTERIOR_ROOM_WIDTH,.13,.18,interiorPalette.trim,new THREE.Vector3(0,.11,INTERIOR_BACK_Z+.16));
+iBox(.16,2.05,.10,interiorPalette.cream,new THREE.Vector3(-2.35,2.65,INTERIOR_BACK_Z+.16));
+iBox(.16,2.05,.10,interiorPalette.cream,new THREE.Vector3(.15,2.65,INTERIOR_BACK_Z+.16));
+iBox(2.65,.16,.10,interiorPalette.cream,new THREE.Vector3(-1.1,2.65,INTERIOR_BACK_Z+.16));
+iBox(2.65,.16,.10,interiorPalette.cream,new THREE.Vector3(-1.1,3.62,INTERIOR_BACK_Z+.16));
+const windowGlass=iBox(2.35,1.8,.05,interiorPalette.glass,new THREE.Vector3(-1.1,2.65,INTERIOR_BACK_Z+.23)); windowGlass.material.roughness=.38;
+iBox(.13,2.05,.10,interiorPalette.cream,new THREE.Vector3(-1.1,2.65,INTERIOR_BACK_Z+.29));
+iBox(2.65,.13,.10,interiorPalette.cream,new THREE.Vector3(-1.1,2.65,INTERIOR_BACK_Z+.29));
+iBox(.58,2.45,.22,interiorPalette.roof,new THREE.Vector3(-2.78,2.55,INTERIOR_BACK_Z+.39));
+iBox(.58,2.45,.22,interiorPalette.roof,new THREE.Vector3(.58,2.55,INTERIOR_BACK_Z+.39));
 const ceilingShade=iMesh(new THREE.ConeGeometry(.58,.5,24,1,true),interiorPalette.path,new THREE.Vector3(0,4.3,-.9)); ceilingShade.rotation.x=Math.PI;
 iCylinder(.12,.12,.22,interiorPalette.wood,new THREE.Vector3(0,4.73,-.9));
-const wallArt=iBox(1.5,1.05,.10,interiorPalette.wood,new THREE.Vector3(3.4,2.7,-3.82));
-iBox(1.28,.83,.04,interiorPalette.cream,new THREE.Vector3(3.4,2.7,-3.74));
-iMesh(new THREE.CircleGeometry(.25,24),interiorPalette.pink||palette.pink,new THREE.Vector3(3.25,2.78,-3.69)).rotation.y=0;
+const wallArt=iBox(1.5,1.05,.10,interiorPalette.wood,new THREE.Vector3(3.4,2.7,INTERIOR_BACK_Z+.18));
+iBox(1.28,.83,.04,interiorPalette.cream,new THREE.Vector3(3.4,2.7,INTERIOR_BACK_Z+.26));
+iMesh(new THREE.CircleGeometry(.25,24),interiorPalette.pink,new THREE.Vector3(3.25,2.78,INTERIOR_BACK_Z+.31)).rotation.y=0;
 
 const interiorFurniture=new THREE.Group(); interiorScene.add(interiorFurniture);
 function markInteriorItem(group,type){ group.userData.interiorType=type; group.userData.radius=INTERIOR_ITEMS[type].radius; group.traverse(child=>{ if(child.isMesh) child.userData.interiorRoot=group; }); return group; }
@@ -992,7 +993,7 @@ function interiorItemAt(event){ setInteriorRay(event); const hit=interiorRaycast
 function interiorGroundAt(event){ setInteriorRay(event); return interiorRaycaster.ray.intersectPlane(interiorDragPlane,interiorDragPoint)?interiorDragPoint:null; }
 function validInteriorPosition(group,x,z){
   const radius=group.userData.radius||.5;
-  if(x-radius<-5.45||x+radius>5.45||z-radius<-3.45||z+radius>2.8) return false;
+  if(x-radius<-5.45||x+radius>5.45||z-radius<-4.55||z+radius>4.55) return false;
   if(group.userData.interiorType==='rug') return true;
   return [...interiorObjects.values()].every(other=>other===group||other.userData.interiorType==='rug'||Math.hypot(x-other.position.x,z-other.position.z)>radius+(other.userData.radius||.5)*.74);
 }
@@ -1007,7 +1008,7 @@ interiorCanvas.addEventListener('pointermove',event=>{
   if(rotatingInterior){ interiorOrbitTargetAngle=interiorRotateStartAngle+(event.clientX-interiorRotateStartX)*.009; return; }
   if(!draggingInteriorItem) return;
   const point=interiorGroundAt(event); if(!point) return;
-  const x=THREE.MathUtils.clamp(point.x+interiorDragOffset.x,-5.3,5.3),z=THREE.MathUtils.clamp(point.z+interiorDragOffset.z,-3.3,2.65);
+  const x=THREE.MathUtils.clamp(point.x+interiorDragOffset.x,-5.3,5.3),z=THREE.MathUtils.clamp(point.z+interiorDragOffset.z,-4.4,4.4);
   if(validInteriorPosition(draggingInteriorItem,x,z)){ draggingInteriorItem.position.set(x,0,z); interiorLastValid.copy(draggingInteriorItem.position); }
   interiorMoved=true;
 });
@@ -1031,8 +1032,8 @@ function interiorFrame(){
     resizeInterior();
     interiorOrbitAngle+=(interiorOrbitTargetAngle-interiorOrbitAngle)*.11;
     const narrow=interiorCanvas.clientWidth<760;
-    interiorCamera.position.set(Math.sin(interiorOrbitAngle)*(narrow?4.25:4.75),narrow?3.7:3.45,Math.cos(interiorOrbitAngle)*(narrow?2.75:3.12)-.3);
-    interiorCamera.lookAt(0,1.18,-.38);
+    interiorCamera.position.set(Math.sin(interiorOrbitAngle)*(narrow?4.35:4.8),narrow?3.8:3.55,Math.cos(interiorOrbitAngle)*(narrow?3.75:4.2)-.15);
+    interiorCamera.lookAt(0,1.2,-.2);
     interiorRenderer.render(interiorScene,interiorCamera);
   }
   requestAnimationFrame(interiorFrame);
