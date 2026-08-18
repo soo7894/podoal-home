@@ -217,6 +217,7 @@ function packSharedHome(){
     d:active,
     g:[grapeProgress,completedBunches],
     i:Object.entries(interiorLayout).filter(([,item])=>item?.placed).map(([type,item])=>[type,Math.round((item.x||0)*100),Math.round((item.z||0)*100)]),
+    o:Math.round(interiorOrbitTargetAngle*1000),
     w:[Math.round(world.rotation.y*1000),Math.round(camera.position.y*100)]
   };
 }
@@ -243,7 +244,7 @@ function unpackSharedHome(data){
   });
   const interiorLayout={};
   if(Array.isArray(data.i)) data.i.forEach(([type,x,z])=>{ if(typeof type==='string'&&Number.isFinite(x)&&Number.isFinite(z)) interiorLayout[type]={placed:true,x:x/100,z:z/100}; });
-  return {memories,streakStartDate:data.s||'',houseName:data.n,decorLayout,interiorLayout,grapeProgress:Array.isArray(data.g)?Number(data.g[0])||0:memories.length%7,completedBunches:Array.isArray(data.g)?Number(data.g[1])||0:Math.floor(memories.length/7),view:{rotation:(data.w?.[0]??440)/1000,cameraHeight:(data.w?.[1]??630)/100}};
+  return {memories,streakStartDate:data.s||'',houseName:data.n,decorLayout,interiorLayout,interiorViewAngle:Number.isFinite(data.o)?data.o/1000:0,grapeProgress:Array.isArray(data.g)?Number(data.g[0])||0:memories.length%7,completedBunches:Array.isArray(data.g)?Number(data.g[1])||0:Math.floor(memories.length/7),view:{rotation:(data.w?.[0]??440)/1000,cameraHeight:(data.w?.[1]??630)/100}};
 }
 function encodeSharedHome(data){
   const packed=window.LZString?.compressToEncodedURIComponent(JSON.stringify(data));
@@ -881,12 +882,14 @@ function frame(time){ resize(); if(!dragging&&!userHasDragged) desiredRotation=.
 requestAnimationFrame(frame);
 
 const INTERIOR_ITEMS={
-  sofa:{label:'포근한 소파',radius:1.05,start:[-1.7,-1.1]},
-  rug:{label:'둥근 러그',radius:.2,start:[0,.25]},
-  lamp:{label:'스탠드 조명',radius:.48,start:[3,-2.35]},
-  plant:{label:'초록 화분',radius:.55,start:[3.2,.2]},
-  shelf:{label:'나무 선반',radius:.78,start:[-3.7,-2.75]}
+  sofa:{label:'포근한 소파',radius:1.05,start:[-1.7,-1.1],unlockBunch:3},
+  rug:{label:'둥근 러그',radius:.2,start:[0,.25],unlockBunch:4},
+  lamp:{label:'스탠드 조명',radius:.48,start:[3,-2.35],unlockBunch:5},
+  plant:{label:'초록 화분',radius:.55,start:[3.2,.2],unlockBunch:6},
+  shelf:{label:'나무 선반',radius:.78,start:[-3.7,-2.75],unlockBunch:7}
 };
+function isInteriorItemUnlocked(type){ return completedBunches>=(INTERIOR_ITEMS[type]?.unlockBunch||Infinity); }
+function interiorGiftForBunch(bunch){ return Object.entries(INTERIOR_ITEMS).find(([,item])=>item.unlockBunch===bunch); }
 const interiorRenderer=new THREE.WebGLRenderer({canvas:interiorCanvas,antialias:true,alpha:false});
 interiorRenderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
 interiorRenderer.shadowMap.enabled=true;
@@ -957,7 +960,11 @@ function createInteriorItem(type){
 const interiorObjects=new Map();
 function saveInteriorLayout(){ persistLocal(INTERIOR_LAYOUT_KEY,JSON.stringify(interiorLayout)); }
 function renderInteriorOptions(){
-  interiorOptions.innerHTML=Object.entries(INTERIOR_ITEMS).map(([type,item])=>`<button class="interior-option" data-interior-item="${type}" type="button" ${interiorLayout[type]?.placed||isSharedHome?'disabled':''}><i aria-hidden="true"></i><span>${item.label}</span></button>`).join('');
+  interiorOptions.innerHTML=Object.entries(INTERIOR_ITEMS).map(([type,item])=>{
+    const placed=Boolean(interiorLayout[type]?.placed),unlocked=isInteriorItemUnlocked(type);
+    const state=!unlocked?`${item.unlockBunch}번째 송이`:placed?'배치됨':'꺼내기';
+    return `<button class="interior-option${unlocked?' unlocked':' locked'}" data-interior-item="${type}" type="button" ${placed||!unlocked||isSharedHome?'disabled':''}><i aria-hidden="true"></i><span>${item.label}<small>${state}</small></span></button>`;
+  }).join('');
 }
 function setInteriorSelection(group){
   interiorObjects.forEach(item=>item.traverse(child=>{ if(child.isMesh&&child.material?.emissive){ child.material.emissive.setHex(0); child.material.emissiveIntensity=0; } }));
@@ -966,17 +973,18 @@ function setInteriorSelection(group){
   storeInteriorItemButton.hidden=!group||isSharedHome;
 }
 function placeInteriorItem(type){
-  if(isSharedHome||interiorObjects.has(type)||!INTERIOR_ITEMS[type]) return;
+  if(isSharedHome||interiorObjects.has(type)||!isInteriorItemUnlocked(type)) return;
   const group=createInteriorItem(type); const [x,z]=INTERIOR_ITEMS[type].start; group.position.set(x,0,z); interiorObjects.set(type,group);
   interiorLayout[type]={placed:true,x,z}; saveInteriorLayout(); renderInteriorOptions(); setInteriorSelection(group);
 }
 function rebuildInterior(){
   while(interiorFurniture.children.length) interiorFurniture.remove(interiorFurniture.children[0]);
   interiorObjects.clear();
-  Object.entries(INTERIOR_ITEMS).forEach(([type,item])=>{ const saved=interiorLayout[type]; if(!saved?.placed) return; const group=createInteriorItem(type); group.position.set(Number.isFinite(saved.x)?saved.x:item.start[0],0,Number.isFinite(saved.z)?saved.z:item.start[1]); interiorObjects.set(type,group); });
+  Object.entries(INTERIOR_ITEMS).forEach(([type,item])=>{ const saved=interiorLayout[type]; if(!saved?.placed||!isInteriorItemUnlocked(type)) return; const group=createInteriorItem(type); group.position.set(Number.isFinite(saved.x)?saved.x:item.start[0],0,Number.isFinite(saved.z)?saved.z:item.start[1]); interiorObjects.set(type,group); });
   setInteriorSelection(null); renderInteriorOptions();
 }
-let selectedInteriorItem=null,draggingInteriorItem=null,interiorMoved=false;
+let selectedInteriorItem=null,draggingInteriorItem=null,interiorMoved=false,rotatingInterior=false,interiorRotateStartX=0;
+let interiorOrbitAngle=Number(sharedHome?.interiorViewAngle??interiorLayout.viewAngle)||0,interiorOrbitTargetAngle=interiorOrbitAngle,interiorRotateStartAngle=interiorOrbitAngle;
 const interiorRaycaster=new THREE.Raycaster(),interiorPointer=new THREE.Vector2(),interiorDragPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),interiorDragPoint=new THREE.Vector3(),interiorDragOffset=new THREE.Vector3(),interiorLastValid=new THREE.Vector3();
 function setInteriorRay(event){ const rect=interiorCanvas.getBoundingClientRect(); interiorPointer.x=((event.clientX-rect.left)/rect.width)*2-1; interiorPointer.y=-((event.clientY-rect.top)/rect.height)*2+1; interiorRaycaster.setFromCamera(interiorPointer,interiorCamera); }
 function interiorItemAt(event){ setInteriorRay(event); const hit=interiorRaycaster.intersectObjects([...interiorObjects.values()],true)[0]; return hit?.object?.userData?.interiorRoot||null; }
@@ -989,11 +997,13 @@ function validInteriorPosition(group,x,z){
 }
 interiorCanvas.addEventListener('pointerdown',event=>{
   const group=interiorItemAt(event); setInteriorSelection(group);
-  if(!group||isSharedHome){ if(group&&isSharedHome) showCaptureNotice('친구의 거실이에요','가구 배치는 원래 모습 그대로 감상할 수 있어요.'); return; }
+  if(!group){ rotatingInterior=true; interiorRotateStartX=event.clientX; interiorRotateStartAngle=interiorOrbitTargetAngle; interiorCanvas.classList.add('dragging'); interiorCanvas.setPointerCapture(event.pointerId); return; }
+  if(isSharedHome){ showCaptureNotice('친구의 거실이에요','빈 공간을 끌어 360° 둘러볼 수 있어요.'); return; }
   const point=interiorGroundAt(event); if(!point) return;
   draggingInteriorItem=group; interiorMoved=false; interiorDragOffset.set(group.position.x-point.x,0,group.position.z-point.z); interiorLastValid.copy(group.position); interiorCanvas.classList.add('dragging'); interiorCanvas.setPointerCapture(event.pointerId);
 });
 interiorCanvas.addEventListener('pointermove',event=>{
+  if(rotatingInterior){ interiorOrbitTargetAngle=interiorRotateStartAngle+(event.clientX-interiorRotateStartX)*.009; return; }
   if(!draggingInteriorItem) return;
   const point=interiorGroundAt(event); if(!point) return;
   const x=THREE.MathUtils.clamp(point.x+interiorDragOffset.x,-5.3,5.3),z=THREE.MathUtils.clamp(point.z+interiorDragOffset.z,-3.3,2.65);
@@ -1001,6 +1011,7 @@ interiorCanvas.addEventListener('pointermove',event=>{
   interiorMoved=true;
 });
 function finishInteriorDrag(){
+  if(rotatingInterior){ rotatingInterior=false; interiorLayout.viewAngle=interiorOrbitTargetAngle; saveInteriorLayout(); interiorCanvas.classList.remove('dragging'); return; }
   if(!draggingInteriorItem) return;
   draggingInteriorItem.position.copy(interiorLastValid);
   const type=draggingInteriorItem.userData.interiorType; interiorLayout[type]={placed:true,x:draggingInteriorItem.position.x,z:draggingInteriorItem.position.z}; saveInteriorLayout();
@@ -1013,13 +1024,24 @@ storeInteriorItemButton.addEventListener('click',()=>{
   if(!selectedInteriorItem||isSharedHome) return;
   const type=selectedInteriorItem.userData.interiorType; interiorFurniture.remove(selectedInteriorItem); interiorObjects.delete(type); interiorLayout[type]={placed:false}; saveInteriorLayout(); setInteriorSelection(null); renderInteriorOptions();
 });
-function resizeInterior(){ const width=interiorCanvas.clientWidth,height=interiorCanvas.clientHeight; if(!width||!height) return; interiorRenderer.setSize(width,height,false); interiorCamera.aspect=width/height; interiorCamera.position.z=width<760?12.6:10.8; interiorCamera.position.y=width<760?5.6:4.9; interiorCamera.updateProjectionMatrix(); interiorCamera.lookAt(0,1.25,-.65); }
-function interiorFrame(){ if(interiorView.classList.contains('open')){ resizeInterior(); interiorRenderer.render(interiorScene,interiorCamera); } requestAnimationFrame(interiorFrame); }
+function resizeInterior(){ const width=interiorCanvas.clientWidth,height=interiorCanvas.clientHeight; if(!width||!height) return; interiorRenderer.setSize(width,height,false); interiorCamera.aspect=width/height; interiorCamera.fov=width<760?54:48; interiorCamera.updateProjectionMatrix(); }
+function interiorFrame(){
+  if(interiorView.classList.contains('open')){
+    resizeInterior();
+    interiorOrbitAngle+=(interiorOrbitTargetAngle-interiorOrbitAngle)*.11;
+    const narrow=interiorCanvas.clientWidth<760;
+    interiorCamera.position.set(Math.sin(interiorOrbitAngle)*(narrow?4.25:4.75),narrow?3.7:3.45,Math.cos(interiorOrbitAngle)*(narrow?2.75:3.12)-.3);
+    interiorCamera.lookAt(0,1.18,-.38);
+    interiorRenderer.render(interiorScene,interiorCamera);
+  }
+  requestAnimationFrame(interiorFrame);
+}
 function enterInterior(){
   if(completedBunches<INTERIOR_UNLOCK_BUNCHES) return;
   interiorHouseName.textContent=`${houseName}네 집`;
+  rebuildInterior();
   interiorView.classList.add('open'); interiorView.setAttribute('aria-hidden','false'); document.body.classList.add('interior-open'); resizeInterior();
-  showCaptureNotice('거실 문이 열렸어요!','가구를 눌러 꺼내고, 원하는 자리로 천천히 끌어 보세요.');
+  showCaptureNotice('거실 문이 열렸어요!','빈 공간을 끌면 360°로 둘러보고, 얻은 가구는 직접 옮길 수 있어요.');
 }
 function leaveInterior(){ interiorView.classList.remove('open'); interiorView.setAttribute('aria-hidden','true'); document.body.classList.remove('interior-open'); setInteriorSelection(null); doorOpen=false; doorTargetRotation=0; warmInterior.visible=false; }
 document.querySelector('#leave-interior').addEventListener('click',leaveInterior);
@@ -1235,7 +1257,9 @@ function openGrapeReward(memory,bunchCompleted){
   document.querySelector('#reward-title').innerHTML=bunchCompleted?'포도송이가<br /><em>통통하게 완성됐어요!</em>':'오늘의 포도알이<br /><em>톡! 붙었어요</em>';
   rewardPraise.textContent=praiseFor(memory);
   rewardBunch.innerHTML=grapeDotsHTML(bunchCompleted?7:grapeProgress,true);
-  rewardProgressText.textContent=bunchCompleted&&completedBunches===INTERIOR_UNLOCK_BUNCHES?'7개의 잘한 내가 담기며, 집 안의 거실도 열렸어요!':bunchCompleted?'7개의 잘한 내가 한 송이에 담겼어요.':`이번 포도송이 ${grapeProgress} / 7`;
+  const interiorGift=bunchCompleted?interiorGiftForBunch(completedBunches):null;
+  const progressCopy=bunchCompleted&&completedBunches===INTERIOR_UNLOCK_BUNCHES?'7개의 잘한 내가 담기며, 집 안의 거실도 열렸어요!':bunchCompleted?'7개의 잘한 내가 한 송이에 담겼어요.':`이번 포도송이 ${grapeProgress} / 7`;
+  rewardProgressText.innerHTML=`${progressCopy}${interiorGift?`<em>거실 선물 도착 · ${interiorGift[1].label}</em>`:''}`;
   rewardGift.hidden=!bunchCompleted;
   rewardContinueButton.hidden=bunchCompleted;
   rewardStoreButton.hidden=!bunchCompleted;
@@ -1502,6 +1526,7 @@ function recordMemory(text,kind='win'){
     updateStreak();
   }
   saveAllData();
+  if(bunchCompleted) rebuildInterior();
   renderRecords();
   renderRoutine();
   return {memory,bunchCompleted};
