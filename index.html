@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.min.js" />
     <link href="https://fonts.googleapis.com/css2?family=Jua&family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./styles.css?v=16" />
+    <link rel="stylesheet" href="./styles.css?v=17" />
   </head>
   <body>
     <main class="app-shell">
@@ -103,6 +103,23 @@
           </ul>
           <button class="text-button" id="open-manager" type="button">기록 관리하기 →</button>
         </div>
+        <section class="habit-home-card" aria-labelledby="habit-home-title">
+          <div class="habit-home-copy">
+            <p class="mini-title">A GENTLE ROUTINE</p>
+            <h2 id="habit-home-title"><em id="routine-theme-name">나를 돌보는</em><br />오늘의 작은 약속</h2>
+            <p id="return-message">오늘은 한 줄만 남겨도 충분해요.</p>
+          </div>
+          <div class="daily-prompt-card">
+            <p>오늘의 제안</p>
+            <strong id="daily-prompt">나에게 고마웠던 순간을 한 줄로 적어 볼까요?</strong>
+            <div class="quick-prompt-list" id="quick-prompt-list" aria-label="빠른 기록 문장"></div>
+          </div>
+          <div class="gentle-actions">
+            <div class="theme-picker"><span>나의 테마</span><div id="theme-options" role="group" aria-label="기록 테마"></div></div>
+            <button class="rest-day-button" id="save-rest-day" type="button">☁ 오늘은 쉬어도 잘했어요</button>
+            <button class="weekly-reflection-button" id="open-weekly-reflection" type="button">이번 주 돌아보기 <span>→</span></button>
+          </div>
+        </section>
       </section>
     </main>
 
@@ -113,6 +130,7 @@
         <h2 id="entry-title">오늘, 무엇을<br /><em>잘 해냈나요?</em></h2>
         <label for="memory-input">잘한 일을 짧게 적어 주세요</label>
         <input id="memory-input" maxlength="42" placeholder="예: 산책을 하며 나에게 집중했다" autocomplete="off" />
+        <div class="entry-quick-prompts" id="entry-quick-prompts" aria-label="기록 문장 제안"></div>
         <p class="choose-label">이 기억을 어떤 장식으로 남길까요? <b>32가지</b></p>
         <div class="decor-options" id="decor-options" aria-label="집과 정원 장식 고르기"></div>
         <button class="primary-button save-button" id="save-memory">이 장식을 집에 놓기 <span>→</span></button>
@@ -153,6 +171,7 @@
         <p class="eyebrow"><span></span> MY LITTLE ARCHIVE</p>
         <h2 id="manager-title">나의<br /><em>기록 관리</em></h2>
         <section class="week-summary"><p class="mini-title">THIS WEEK</p><div id="week-summary"></div></section>
+        <section class="weekly-letter"><p class="mini-title">THIS WEEK'S LETTER</p><div id="weekly-letter"></div></section>
         <p class="mini-title manager-list-title">ALL MEMORIES</p>
         <div class="manager-list" id="manager-list"></div>
         <section class="manager-editor" id="manager-editor" hidden>
@@ -177,6 +196,6 @@
       </section>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
-    <script type="module" src="./main.js?v=97"></script>
+    <script type="module" src="./main.js?v=98"></script>
   </body>
 </html>

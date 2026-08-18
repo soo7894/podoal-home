@@ -41,6 +41,15 @@ const weekSummary = document.querySelector('#week-summary');
 const managerEditor = document.querySelector('#manager-editor');
 const editMemoryText = document.querySelector('#edit-memory-text');
 const guideBackdrop = document.querySelector('#guide-backdrop');
+const routineThemeName = document.querySelector('#routine-theme-name');
+const returnMessage = document.querySelector('#return-message');
+const dailyPrompt = document.querySelector('#daily-prompt');
+const quickPromptList = document.querySelector('#quick-prompt-list');
+const entryQuickPrompts = document.querySelector('#entry-quick-prompts');
+const themeOptions = document.querySelector('#theme-options');
+const saveRestDayButton = document.querySelector('#save-rest-day');
+const openWeeklyReflectionButton = document.querySelector('#open-weekly-reflection');
+const weeklyLetter = document.querySelector('#weekly-letter');
 const STORAGE_KEY = 'my-little-day-memories-v1';
 const HOUSE_NAME_KEY = 'my-little-day-house-name-v1';
 const STREAK_START_KEY = 'my-little-day-streak-start-v1';
@@ -49,10 +58,17 @@ const GUIDE_SEEN_KEY = 'my-little-day-guide-seen-v1';
 const SHARE_HASH_PREFIX = '#my-little-home=';
 const SHARE_ID_PREFIX = '#share=';
 const SHARE_LINK_CACHE_KEY = 'my-little-day-last-share-link-v1';
+const ROUTINE_THEME_KEY = 'my-little-day-routine-theme-v1';
 const SHARE_ENDPOINT = 'https://alpxeyqkqlacbbluwazq.supabase.co/functions/v1/home-share';
 const SHARE_PUBLISHABLE_KEY = 'sb_publishable_kx3FsYOCmIZJTVcIDr1B0g_FWZr8BT_';
 let selectedDecor = 'flower';
 let editingMemoryDate = null;
+const ROUTINE_THEMES = {
+  care:{label:'나를 돌보는',chip:'돌봄',prompts:['나에게 고마웠던 순간을 적어 볼까요?','내 몸을 위해 해낸 작은 일을 남겨요.','오늘 나를 편하게 해 준 선택은 무엇인가요?']},
+  growth:{label:'조금씩 자라는',chip:'성장',prompts:['어제보다 한 걸음 나아간 일을 적어 볼까요?','배운 것 하나를 짧게 남겨요.','미뤄둔 일 중 시작한 것은 무엇인가요?']},
+  relation:{label:'마음을 나누는',chip:'관계',prompts:['누군가에게 건넨 따뜻함을 적어 볼까요?','고마웠던 사람을 떠올려 봐요.','오늘의 작은 연결을 남겨요.']},
+  rest:{label:'천천히 쉬어가는',chip:'휴식',prompts:['잠시 멈춘 것도 오늘의 잘함이에요.','나를 쉬게 해 준 순간을 적어 봐요.','부담을 내려놓은 일을 남겨요.']}
+};
 const DECOR_OPTIONS = [
   ['flower','✿','꽃 화분'],['lamp','☀','작은 조명'],['book','▤','책 더미'],['flag','⚑','응원 깃발'],['tree','♟','작은 나무'],['bigtree','♟','큰 나무'],['bench','▰','나무 벤치'],
   ['fountain','⛲','분수'],['birdhouse','⌂','새집'],['mailbox','✉','우편함'],['fence','▥','울타리'],['swing','♧','그네'],['bicycle','◎','자전거'],
@@ -169,7 +185,7 @@ function packSharedHome(){
   });
   return {
     v:2,
-    m:memories.map(memory=>[memory.text,SHARE_DECOR_TYPES.indexOf(memory.decor),Date.parse(memory.date)||0,memory.flowerColor||0]),
+    m:memories.map(memory=>[memory.text,Math.max(0,SHARE_DECOR_TYPES.indexOf(memory.decor)),Date.parse(memory.date)||0,memory.flowerColor||0,memory.kind==='rest'?1:0]),
     s:streakStartDate,
     n:houseName,
     d:active,
@@ -178,11 +194,12 @@ function packSharedHome(){
 }
 function unpackSharedHome(data){
   if(!Array.isArray(data.m)||!Array.isArray(data.d)||typeof data.n!=='string') return null;
-  const memories=data.m.map(([text,typeIndex,time,flowerColor])=>({
+  const memories=data.m.map(([text,typeIndex,time,flowerColor,isRest])=>({
     text:String(text||''),
-    decor:SHARE_DECOR_TYPES[typeIndex]||'flower',
+    decor:isRest?'rest':SHARE_DECOR_TYPES[typeIndex]||'flower',
     date:Number.isFinite(time)&&time>0?new Date(time).toISOString():new Date().toISOString(),
-    flowerColor:flowerColor||null
+    flowerColor:flowerColor||null,
+    kind:isRest?'rest':undefined
   }));
   const decorLayout={};
   data.d.forEach(([compactId,x,z,flowerColor,bloomMask,roofLightOn])=>{
@@ -216,6 +233,8 @@ let memories = sharedHome?.memories ?? JSON.parse(localStorage.getItem(STORAGE_K
 let streakStartDate = sharedHome?.streakStartDate ?? (localStorage.getItem(STREAK_START_KEY) || '');
 let decorLayout = sharedHome?.decorLayout ?? JSON.parse(localStorage.getItem(DECOR_LAYOUT_KEY) || '{}');
 let houseName = sharedHome?.houseName ?? (localStorage.getItem(HOUSE_NAME_KEY) || '우리');
+let routineTheme = isSharedHome ? 'care' : (localStorage.getItem(ROUTINE_THEME_KEY) || 'care');
+if(!ROUTINE_THEMES[routineTheme]) routineTheme='care';
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true, preserveDrawingBuffer:true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -652,7 +671,7 @@ if(type==='chime') {
   if(!savedPosition || savedPosition.x!==g.position.x || savedPosition.z!==g.position.z) saveDecorationPosition(g);
   if(animate) { const baseY=g.position.y; g.scale.setScalar(.01); const start=performance.now(); const grow=now=>{ const p=Math.min((now-start)/480,1); g.scale.setScalar(1+(1-p)*.15); g.position.y=baseY+Math.sin(p*Math.PI)*.22; if(p<1) requestAnimationFrame(grow); else g.position.y=baseY; }; requestAnimationFrame(grow); }
 }
-function addStoredDecorations(){ memories.forEach((m,i)=>addDecoration(m.decor,i,false,m.text,`memory-${m.date||i}`,m.flowerColor)); }
+function addStoredDecorations(){ memories.filter(memory=>memory.kind!=='rest').forEach((m,i)=>addDecoration(m.decor,i,false,m.text,`memory-${m.date||i}`,m.flowerColor)); }
 addStoredDecorations();
 function settleGroundDecorations(){
   for(let pass=0;pass<5;pass++){
@@ -894,13 +913,19 @@ async function currentSharedHomeUrl(){
   cacheShareLink(signature,url);
   return url;
 }
+function homeShareText(){
+  const thisWeekStart=dateFromString(localDateString());
+  thisWeekStart.setDate(thisWeekStart.getDate()-(thisWeekStart.getDay()+6)%7);
+  const thisWeekCount=memories.filter(memory=>dateFromString(memoryWeekKey(memory.date))>=thisWeekStart).length;
+  return thisWeekCount?`이번 주 ${thisWeekCount}번의 작은 기록으로 꾸민 ${houseName}네 집이에요. 따뜻하게 둘러봐 주세요.`:`${houseName}네 작은 집에 놀러 와 주세요.`;
+}
 async function shareHomeLink(){
   showCaptureNotice('공유 링크를 만들고 있어요.','잠시만 기다려 주세요.');
   try {
     const url=await currentSharedHomeUrl();
     if(navigator.share){
       try {
-        await navigator.share({title:'나의 오늘의 집',text:'오늘의 잘한 일로 꾸민 나의 작은 집이에요.',url});
+        await navigator.share({title:'나의 오늘의 집',text:homeShareText(),url});
         showCaptureNotice('집 링크를 공유했어요!','친구가 같은 배치와 각도로 집을 볼 수 있어요.');
         return;
       } catch(error) { if(error?.name==='AbortError') return; }
@@ -933,13 +958,38 @@ function formatMemoryTimestamp(value){
 
 function renderRecords(){
   const total = memories.length; countEl.innerHTML=`${String(total).padStart(2,'0')} <small>/ 31</small>`; progressFill.style.width=`${Math.min(total/31*100,100)}%`;
-  previewCount.textContent=`장식 ${String(total).padStart(2,'0')}개`;
+  const decorCount=memories.filter(memory=>memory.kind!=='rest').length;
+  previewCount.textContent=`기록 ${String(total).padStart(2,'0')}개 · 장식 ${String(decorCount).padStart(2,'0')}개`;
   if(memories[0]) todayPreview.innerHTML=memories[0].text.replace(/(.{17})/g,'$1<br>');
-  const shown = memories.slice(0,3).map(m=>`<li><span class="memory-dot ${m.decor}">${DECOR_INFO[m.decor]?.icon||'✦'}</span><div><b>${escapeHTML(m.text)}</b><small>${formatMemoryTimestamp(m.date)}</small></div></li>`).join('');
-  if(shown) recentList.innerHTML=shown;
+  const shown = memories.slice(0,3).map(m=>`<li><span class="memory-dot ${m.kind==='rest'?'rest':m.decor}">${m.kind==='rest'?'☁':DECOR_INFO[m.decor]?.icon||'✦'}</span><div><b>${escapeHTML(m.text)}</b><small>${formatMemoryTimestamp(m.date)}</small></div></li>`).join('');
+  recentList.innerHTML=shown||'<li class="recent-empty"><span class="memory-dot">✦</span><div><b>오늘의 첫 장면을 남겨 보세요</b><small>한 줄이면 충분해요</small></div></li>';
 }
 function escapeHTML(text){ const el=document.createElement('div');el.textContent=text;return el.innerHTML; }
 renderRecords();
+
+function themePrompts(){ return ROUTINE_THEMES[routineTheme].prompts; }
+function themePromptForToday(){
+  const today=new Date();
+  return themePrompts()[(today.getFullYear()+today.getMonth()+today.getDate())%themePrompts().length];
+}
+function latestMemory(){ return memories.reduce((latest,memory)=>!latest||new Date(memory.date)>new Date(latest.date)?memory:latest,null); }
+function renderRoutine(){
+  const theme=ROUTINE_THEMES[routineTheme];
+  const latest=latestMemory();
+  const today=localDateString();
+  routineThemeName.textContent=theme.label;
+  dailyPrompt.textContent=themePromptForToday();
+  themeOptions.innerHTML=Object.entries(ROUTINE_THEMES).map(([key,item])=>`<button class="theme-option${key===routineTheme?' selected':''}" type="button" data-theme="${key}" aria-pressed="${key===routineTheme}">${item.chip}</button>`).join('');
+  const prompts=themePrompts().slice(0,2);
+  quickPromptList.innerHTML=prompts.map(prompt=>`<button type="button" data-quick-prompt="${prompt}">${prompt.length>17?`${prompt.slice(0,17)}…`:prompt}</button>`).join('');
+  entryQuickPrompts.innerHTML=prompts.map(prompt=>`<button type="button" data-quick-prompt="${prompt}">${prompt}</button>`).join('');
+  if(!latest) returnMessage.textContent='시작이 늦어도 괜찮아요. 오늘의 한 줄이 첫 장면이 됩니다.';
+  else {
+    const gap=Math.floor((dateFromString(today)-dateFromString(localDateString(new Date(latest.date))))/86400000);
+    returnMessage.textContent=gap>1?`${gap}일 만에 돌아왔어요. 오늘은 한 줄만 남겨도 충분해요.`:gap===1?'어제의 나와 오늘의 나를 다정하게 이어 볼까요?':'오늘도 이 집에 따뜻함을 하나 놓아 볼까요?';
+  }
+}
+renderRoutine();
 
 function memoryWeekKey(value){
   const date=new Date(value);
@@ -957,8 +1007,20 @@ function renderWeekSummary(){
     return `<div class="week-day${key===localDateString()?' today':''}"><small>${weekday[index]}</small><b>${count}</b></div>`;
   }).join('')}</div>`;
 }
+function renderWeeklyLetter(){
+  const today=dateFromString(localDateString());
+  const monday=new Date(today); monday.setDate(today.getDate()-(today.getDay()+6)%7);
+  const week=memories.filter(memory=>dateFromString(memoryWeekKey(memory.date))>=monday);
+  const activeDays=new Set(week.map(memory=>memoryWeekKey(memory.date))).size;
+  const restCount=week.filter(memory=>memory.kind==='rest').length;
+  const highlight=week.find(memory=>memory.kind!=='rest');
+  weeklyLetter.innerHTML=week.length
+    ? `<strong>이번 주, ${activeDays}일 동안 나를 챙겼어요.</strong><p>${highlight?`가장 반짝인 순간: “${escapeHTML(highlight.text)}”`:'잠시 쉬어 간 것도 소중한 기록이에요.'}${restCount?` · 휴식 ${restCount}일`:''}</p>`
+    : '<strong>아직 비어 있는 이번 주예요.</strong><p>오늘의 한 줄부터 가볍게 시작해 볼까요?</p>';
+}
 function renderManager(){
   renderWeekSummary();
+  renderWeeklyLetter();
   managerList.innerHTML=memories.length?memories.map(memory=>`<article class="manager-item"><div><b>${escapeHTML(memory.text)}</b><small>${formatMemoryTimestamp(memory.date)}</small></div>${isSharedHome?'':`<div class="manager-item-actions"><button type="button" data-edit-memory="${memory.date}">수정</button><button class="delete-memory" type="button" data-delete-memory="${memory.date}">삭제</button></div>`}</article>`).join(''):'<p class="manager-empty">아직 기록한 잘한 일이 없어요.</p>';
 }
 function saveAllData(){
@@ -995,6 +1057,7 @@ function saveMemoryEdit(){
   saveAllData();
   rebuildDecorations();
   renderRecords();
+  renderRoutine();
   renderManager();
   managerEditor.hidden=true;
   editingMemoryDate=null;
@@ -1005,6 +1068,7 @@ function deleteMemory(date){
   saveAllData();
   rebuildDecorations();
   renderRecords();
+  renderRoutine();
   renderManager();
 }
 function resetHome(){
@@ -1018,13 +1082,16 @@ function resetHome(){
   localStorage.removeItem(DECOR_LAYOUT_KEY);
   localStorage.removeItem(STREAK_START_KEY);
   localStorage.removeItem(HOUSE_NAME_KEY);
+  localStorage.removeItem(ROUTINE_THEME_KEY);
   selectedDecor='flower';
+  routineTheme='care';
   houseNameText.textContent=`${houseName}네 집`;
   houseNameInput.value=houseName;
   drawNameplate();
   renderDecorOptions();
   rebuildDecorations();
   renderRecords();
+  renderRoutine();
   updateStreak();
   updateHouseName();
   showCaptureNotice('처음 상태로 돌아왔어요!','이제 새로운 잘한 일부터 차곡차곡 기록해 보세요.');
@@ -1105,7 +1172,7 @@ houseNameButton.addEventListener('click',()=>{ if(isSharedHome){ showCaptureNoti
 houseNameInput.addEventListener('keydown',e=>{ if(e.key==='Enter') saveHouseName(); if(e.key==='Escape') houseNameEditor.classList.remove('editing'); });
 houseNameInput.addEventListener('blur',saveHouseName);
 
-function openModal(){ if(isSharedHome){ showCaptureNotice('공유받은 집이에요','기록과 장식은 원래 모습 그대로 보기 전용으로 열려 있어요.'); return; } modal.classList.add('open'); modal.setAttribute('aria-hidden','false'); setTimeout(()=>input.focus(),180); }
+function openModal(){ if(isSharedHome){ showCaptureNotice('공유받은 집이에요','기록과 장식은 원래 모습 그대로 보기 전용으로 열려 있어요.'); return; } renderRoutine(); modal.classList.add('open'); modal.setAttribute('aria-hidden','false'); setTimeout(()=>input.focus(),180); }
 function closeModal(){ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); }
 document.querySelector('#open-entry').addEventListener('click',openModal);
 document.querySelector('#card-entry').addEventListener('click',openModal);
@@ -1116,16 +1183,48 @@ document.querySelector('#save-memory').addEventListener('click',()=>{
   const text=input.value.trim();
   if(!text){ input.focus(); input.placeholder='오늘의 잘한 일을 한 줄로 적어 주세요 :)'; return; }
   const flowerColor=selectedDecor==='flower'?randomFlowerColor():null;
-  const memory={text,decor:selectedDecor,date:new Date().toISOString(),flowerColor};
+  const memory={text,decor:selectedDecor,date:new Date().toISOString(),flowerColor,theme:routineTheme};
   memories.unshift(memory);
   if(!streakStartDate){
     streakStartDate=localDateString(new Date(memory.date));
     persistLocal(STREAK_START_KEY,streakStartDate);
     updateStreak();
   }
-  persistLocal(STORAGE_KEY,JSON.stringify(memories)); addDecoration(selectedDecor,memories.length,true,text,`memory-${memory.date}`,flowerColor); renderRecords(); input.value=''; closeModal(); toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),3600);
+  persistLocal(STORAGE_KEY,JSON.stringify(memories)); addDecoration(selectedDecor,memories.length,true,text,`memory-${memory.date}`,flowerColor); renderRecords(); renderRoutine(); input.value=''; closeModal(); toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),3600);
 });
 input.addEventListener('keydown',e=>{ if(e.key==='Enter') document.querySelector('#save-memory').click(); });
+function useQuickPrompt(prompt){
+  openModal();
+  input.value=prompt.replace(/[?？]$/,'');
+  input.focus();
+  input.setSelectionRange(input.value.length,input.value.length);
+}
+quickPromptList.addEventListener('click',event=>{ const button=event.target.closest('[data-quick-prompt]'); if(button) useQuickPrompt(button.dataset.quickPrompt); });
+entryQuickPrompts.addEventListener('click',event=>{ const button=event.target.closest('[data-quick-prompt]'); if(button) useQuickPrompt(button.dataset.quickPrompt); });
+themeOptions.addEventListener('click',event=>{
+  const button=event.target.closest('[data-theme]');
+  if(!button||isSharedHome) return;
+  routineTheme=button.dataset.theme;
+  persistLocal(ROUTINE_THEME_KEY,routineTheme);
+  renderRoutine();
+});
+function saveRestDay(){
+  if(isSharedHome){ showCaptureNotice('공유받은 집이에요','휴식 기록은 내 집에서만 남길 수 있어요.'); return; }
+  const today=localDateString();
+  if(memories.some(memory=>memory.kind==='rest'&&memoryWeekKey(memory.date)===today)){
+    showCaptureNotice('오늘의 휴식을 이미 남겼어요','오늘은 그 자체로 충분히 잘하고 있어요.');
+    return;
+  }
+  const memory={text:'오늘은 충분히 쉬었다',decor:'rest',kind:'rest',date:new Date().toISOString(),theme:routineTheme};
+  memories.unshift(memory);
+  if(!streakStartDate){ streakStartDate=today; persistLocal(STREAK_START_KEY,streakStartDate); updateStreak(); }
+  persistLocal(STORAGE_KEY,JSON.stringify(memories));
+  renderRecords();
+  renderRoutine();
+  showCaptureNotice('휴식도 따뜻한 기록이에요','오늘은 장식 없이, 편안히 쉬어 갈게요.');
+}
+saveRestDayButton.addEventListener('click',saveRestDay);
+openWeeklyReflectionButton.addEventListener('click',()=>{ openManager(); setTimeout(()=>weeklyLetter.scrollIntoView({block:'center'}),100); });
 soundButton.addEventListener('click',()=>{
   const soundOn=soundButton.getAttribute('aria-pressed')!=='true';
   soundButton.setAttribute('aria-pressed',String(soundOn));
