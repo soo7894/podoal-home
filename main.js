@@ -338,7 +338,10 @@ box(1.03,.08,2.38,0xd89a55,new THREE.Vector3(0,.12,.67),warmInterior);
 box(1.02,2.24,.09,palette.wall,new THREE.Vector3(0,1.17,-.52),warmInterior);
 const doorwayInteriorFurniture=new THREE.Group(); warmInterior.add(doorwayInteriorFurniture);
 const picture=box(.38,.30,.035,0x8e5948,new THREE.Vector3(-.12,1.58,-.46),warmInterior);
-box(.28,.20,.02,0x9fc8ba,new THREE.Vector3(-.12,1.58,-.43),warmInterior);
+box(.28,.20,.02,palette.cream,new THREE.Vector3(-.12,1.58,-.43),warmInterior);
+const doorwayArtStem=box(.012,.06,.008,palette.leaf,new THREE.Vector3(-.1,1.66,-.414),warmInterior); doorwayArtStem.rotation.z=-.35;
+[[-.14,1.62],[-.1,1.62],[-.06,1.62],[-.12,1.58],[-.08,1.58],[-.1,1.54]].forEach(([x,y],index)=>mesh(new THREE.CircleGeometry(.024,12),mat(index%2?0x8e5f86:0xa66d96),new THREE.Vector3(x,y,-.408),warmInterior));
+const doorwayArtLeaf=mesh(new THREE.CircleGeometry(.025,12),mat(palette.leaf),new THREE.Vector3(-.065,1.66,-.408),warmInterior); doorwayArtLeaf.scale.set(1.5,.65,1); doorwayArtLeaf.rotation.z=.45;
 const doorPivot=new THREE.Group(); doorPivot.position.set(-.54,.08,2.04); world.add(doorPivot);
 const doorMesh=box(1.08,1.92,.16,palette.wood,new THREE.Vector3(.54,.96,0),doorPivot); doorMesh.userData.isDoor=true;
 box(.72,.055,.035,palette.trim,new THREE.Vector3(.54,1.38,.095),doorPivot); box(.72,.055,.035,palette.trim,new THREE.Vector3(.54,.56,.095),doorPivot);
@@ -927,7 +930,9 @@ const ceilingShade=iMesh(new THREE.ConeGeometry(.58,.5,24,1,true),interiorPalett
 iCylinder(.12,.12,.22,interiorPalette.wood,new THREE.Vector3(0,4.73,-.9));
 const wallArt=iBox(1.5,1.05,.10,interiorPalette.wood,new THREE.Vector3(3.4,2.7,INTERIOR_BACK_Z+.18));
 iBox(1.28,.83,.04,interiorPalette.cream,new THREE.Vector3(3.4,2.7,INTERIOR_BACK_Z+.26));
-iMesh(new THREE.CircleGeometry(.25,24),interiorPalette.pink,new THREE.Vector3(3.25,2.78,INTERIOR_BACK_Z+.31)).rotation.y=0;
+const artStem=iBox(.055,.24,.025,interiorPalette.leaf,new THREE.Vector3(3.43,3.02,INTERIOR_BACK_Z+.31)); artStem.rotation.z=-.35;
+[[3.16,2.85],[3.4,2.85],[3.64,2.85],[3.28,2.62],[3.52,2.62],[3.4,2.39]].forEach(([x,y],index)=>iMesh(new THREE.CircleGeometry(.14,20),index%2?0x8e5f86:0xa66d96,new THREE.Vector3(x,y,INTERIOR_BACK_Z+.32)));
+const artLeaf=iMesh(new THREE.CircleGeometry(.15,20),interiorPalette.leaf,new THREE.Vector3(3.67,3.03,INTERIOR_BACK_Z+.32)); artLeaf.scale.set(1.5,.62,1); artLeaf.rotation.z=.45;
 
 // The front wall keeps the room enclosed while the open doorway frames the garden outside.
 const INTERIOR_FRONT_Z=INTERIOR_ROOM_DEPTH/2,INTERIOR_DOOR_WIDTH=1.8,INTERIOR_DOOR_HEIGHT=2.8;
