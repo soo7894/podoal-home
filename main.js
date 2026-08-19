@@ -135,7 +135,7 @@ function renderJournal() {
     $('#record-button-label').textContent = '수정한 문장 저장하기';
     $('#record-help').textContent = '문장을 수정해도 기록한 날짜는 그대로 유지돼요.';
   } else {
-    $('#record-button-label').textContent = '오늘의 기록 남기기';
+    $('#record-button-label').textContent = '오늘의 포도알 남기기';
     $('#record-help').textContent = '같은 날 여러 번 적어도 미션에는 하루로 계산돼요.';
   }
   renderMission();
