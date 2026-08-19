@@ -3,191 +3,183 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#37243f" />
-    <meta name="description" content="오늘의 작은 성취로 포도를 키우고 농장을 넓히는 감성 타이쿤 게임" />
+    <meta name="theme-color" content="#f7d56a" />
+    <meta name="color-scheme" content="light" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="오늘의 작은 집" />
+    <meta name="description" content="잘한 일을 사흘 동안 기록하고, 나만의 작은 집 문을 여는 따뜻한 기록 미션" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="포도일기 농장" />
-    <meta property="og:description" content="오늘의 작은 성취로 포도를 키우고 농장을 넓혀요." />
-    <meta property="og:image" content="__SITE_ORIGIN__/og-v2.png" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="포도일기 농장" />
-    <meta name="twitter:description" content="오늘의 마음을 한 알 수확해요." />
-    <meta name="twitter:image" content="__SITE_ORIGIN__/og-v2.png" />
-    <title>포도일기 농장 — 오늘의 한 알을 수확해요</title>
+    <meta property="og:title" content="오늘의 작은 집" />
+    <meta property="og:description" content="사흘의 잘한 일이 모이면 현관문이 열려요." />
+    <title>오늘의 작은 집 — 사흘의 기록으로 문을 열어요</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icons/home-icon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./styles.css?v=30" />
-    <link rel="stylesheet" href="./tycoon.css?v=1" />
-    <link rel="stylesheet" href="./gate.css?v=1" />
-    <link rel="stylesheet" href="./gate-v2.css?v=1" />
-    <link rel="stylesheet" href="./care.css?v=1" />
+    <link rel="stylesheet" href="./home-mission.css?v=1" />
   </head>
   <body>
-    <section class="record-gate" id="record-gate" aria-labelledby="gate-title">
-      <div class="gate-desk" aria-hidden="true"><i></i><i></i><i></i></div>
-      <div class="gate-copy">
-        <p><span>DAY 01</span> MY GRAPE JOURNAL</p>
-        <h1 id="gate-title">오늘의 한 알을<br /><em>먼저 기록해요.</em></h1>
-        <p class="gate-intro">작은 성취 하나가 포도밭의 문을 열어요.<br />완벽한 하루보다, 기억하고 싶은 한 순간이면 충분해요.</p>
-        <div class="gate-stamp"><b>농장 입장 조건</b><span>오늘 기록 1개 이상</span></div>
-      </div>
-      <article class="gate-sheet">
-        <div class="gate-tape"></div>
-        <header><span>오늘의 성취표</span><b>2026. 08. 18</b></header>
-        <div class="gate-grapes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        <label for="gate-record-input">오늘 잘해낸 일</label>
-        <input id="gate-record-input" maxlength="50" placeholder="예: 물을 한 잔 마셨다" autocomplete="off" />
-        <button id="enter-farm" type="button"><span>🍇</span><b>기록하고 농장 열기</b><small>첫 포도알과 함께 시작해요</small></button>
-        <p class="gate-note">기록은 이 브라우저에 안전하게 저장돼요.</p>
-      </article>
-    </section>
-    <main class="game-shell">
+    <div class="app" id="app">
       <header class="topbar">
-        <a class="brand" href="#farm" aria-label="포도일기 농장 홈"><span class="brand-grapes" aria-hidden="true">●●<br />&nbsp;●</span><span><b>포도일기 농장</b><small>MY GRAPE JOURNAL</small></span></a>
-        <nav aria-label="주요 메뉴"><button class="nav-pill is-active" type="button">오늘의 농장</button><button class="nav-pill" type="button">수확 창고</button><button class="nav-pill" type="button">마을 상점</button></nav>
-        <div class="wallet"><span>보유 골드</span><b>🪙 <i id="gold-count">1,240</i></b></div>
+        <button class="brand" type="button" data-view-target="journal" aria-label="오늘의 작은 집 기록 화면">
+          <span class="brand-home" aria-hidden="true"><i></i></span>
+          <span><b>오늘의 작은 집</b><small>MY LITTLE HOME</small></span>
+        </button>
+        <nav aria-label="주요 메뉴">
+          <button class="is-active" type="button" data-view-target="journal">오늘</button>
+          <button type="button" data-view-target="yard">마당</button>
+          <button type="button" data-open-memories>기록</button>
+        </nav>
+        <div class="mission-badge" id="mission-badge" aria-label="3일 기록 미션 진행 상황">
+          <span>문 열기 미션</span><b><i id="mission-count">0</i> / 3일</b>
+        </div>
       </header>
 
-      <section class="farm-hero" id="farm">
-        <div class="hero-copy">
-          <p class="season-label"><span>SEASON 01</span> 포도향 가득한 늦여름</p>
-          <h1>오늘의 마음을<br /><em>한 알</em> 수확해요.</h1>
-          <p class="hero-intro">작은 일을 해낸 날마다 포도가 익어요.<br />송이를 완성하면 팔고, 밭을 더 넓혀 보세요.</p>
-          <div class="today-note"><span>오늘의 한마디</span><p id="today-note-text">“미뤄둔 일을 하나 끝냈다.”</p><button id="edit-note" type="button" aria-label="오늘의 한마디 수정">✎</button></div>
-        </div>
+      <main>
+        <section class="journal-view" id="journal-view" aria-labelledby="journal-title">
+          <div class="journal-orbit orbit-one" aria-hidden="true"></div>
+          <div class="journal-orbit orbit-two" aria-hidden="true"></div>
+          <div class="journal-layout">
+            <aside class="mission-poster" aria-labelledby="mission-poster-title">
+              <p class="eyebrow">THREE DAYS, ONE DOOR</p>
+              <h2 id="mission-poster-title">사흘의 기록이<br />집의 불을 밝혀요.</h2>
+              <div class="poster-house" aria-hidden="true">
+                <span class="poster-roof"></span>
+                <span class="poster-wall"><i></i><b></b></span>
+                <span class="poster-path"></span>
+              </div>
+              <ol class="mission-days" id="mission-days" aria-label="3일 미션 진행 상황">
+                <li><span>1</span><b>첫 불빛</b></li>
+                <li><span>2</span><b>현관 앞</b></li>
+                <li><span>3</span><b>문 열기</b></li>
+              </ol>
+              <p class="mission-copy" id="mission-copy">첫 번째 잘한 일을 기다리고 있어요.</p>
+              <button class="yard-preview-button" id="yard-preview-button" type="button">마당 먼저 둘러보기 <span>→</span></button>
+            </aside>
 
-        <div class="desk-scene" aria-label="포도 수확 장부">
-          <span class="desk-leaf leaf-one" aria-hidden="true"></span><span class="desk-leaf leaf-two" aria-hidden="true"></span>
-          <div class="paper-shadow"></div>
-          <article class="harvest-sheet">
-            <div class="tape" aria-hidden="true"></div>
-            <header class="sheet-head"><span>이번 주 수확표</span><b>07 / 24</b></header>
-            <div class="sheet-title"><small>목표</small><strong>나를 돌보는 일, 하루 하나!</strong></div>
-            <div class="grape-board" id="grape-board" aria-label="24알 중 7알 수확"></div>
-            <div class="sheet-footer"><span>시작일</span><b>2026. 08. 18</b><em>수확까지 17알</em></div>
-          </article>
-          <div class="loose-grape grape-a" aria-hidden="true"></div><div class="loose-grape grape-b" aria-hidden="true"></div>
-        </div>
+            <article class="record-card">
+              <p class="eyebrow"><span></span> TODAY'S LITTLE WIN</p>
+              <h1 id="journal-title">오늘의 나를<br /><em>한 줄로 칭찬해요.</em></h1>
+              <p class="journal-intro">대단한 일이 아니어도 괜찮아요.<br />서로 다른 사흘의 기록이 모이면 집의 문이 열립니다.</p>
 
-        <aside class="farm-panel">
-          <div class="weather-card"><span class="sun">☀</span><p><small>오늘의 날씨</small><strong>햇살 좋은 날</strong><em>성장 속도 +10%</em></p></div>
-          <div class="field-status"><div><span>🍇</span><p><small>샤인머스캣 밭</small><b>Lv. 3</b></p></div><progress value="68" max="100">68%</progress><small>다음 수확까지 <b>68%</b></small></div>
-          <button class="harvest-button" id="harvest-button" type="button"><span>＋</span><b>오늘의 포도 수확하기</b><small>작은 성취를 기록하고 한 알 받기</small></button>
-          <p class="next-hint">24알을 모으면 <b>포도 1상자</b>를 출하할 수 있어요.</p>
-        </aside>
-      </section>
+              <form class="record-form" id="record-form">
+                <label for="record-input">오늘 잘한 일</label>
+                <div class="record-line">
+                  <input id="record-input" name="record" type="text" maxlength="60" placeholder="예: 피곤했지만 설거지를 마쳤다" autocomplete="off" />
+                  <button class="edit-record" id="edit-record" type="button" hidden>수정</button>
+                </div>
+                <button class="record-button" id="record-button" type="submit">
+                  <span class="button-spark" aria-hidden="true">✦</span>
+                  <b id="record-button-label">오늘의 기록 남기기</b>
+                  <i>→</i>
+                </button>
+                <p class="record-help" id="record-help">오늘 처음 남긴 기록만 미션의 하루로 계산돼요.</p>
+                <p class="form-message" id="form-message" role="status" aria-live="polite"></p>
+              </form>
 
-      <section class="daily-gameplay" id="daily-gameplay">
-        <header class="play-heading">
-          <div><p>DAILY FARM ROUTINE</p><h2>오늘의 농장을<br /><em>돌봐주세요.</em></h2></div>
-          <div class="farm-energy"><span>오늘의 활동력</span><b id="energy-pips" aria-label="활동력 3개"></b></div>
-        </header>
+              <div class="today-saved" id="today-saved" hidden>
+                <span>오늘의 기록</span><p id="today-saved-text"></p>
+              </div>
+            </article>
+          </div>
+        </section>
 
-        <div class="play-grid">
-          <section class="care-card" aria-labelledby="care-title">
-            <header><div><p>FARM CARE</p><h3 id="care-title">농장 돌보기</h3></div><span id="care-mood">포도나무가 기다리고 있어요</span></header>
-            <div class="farm-mini-scene" id="farm-mini-scene" aria-hidden="true"><i class="mini-sun">☀</i><div class="mini-vines"><span>🍇</span><span>🍇</span><span>🍇</span></div><div class="mini-ground"></div></div>
-            <div class="care-meters">
-              <div><span>수분</span><progress id="water-meter" max="100" value="54"></progress><b id="water-value">54%</b></div>
-              <div><span>건강</span><progress id="health-meter" max="100" value="62"></progress><b id="health-value">62%</b></div>
-              <div><span>토양</span><progress id="soil-meter" max="100" value="48"></progress><b id="soil-value">48%</b></div>
+        <section class="yard-view" id="yard-view" aria-labelledby="yard-title" hidden>
+          <div class="scene-toolbar">
+            <button type="button" data-view-target="journal"><span>←</span> 기록으로</button>
+            <div><small>MY LITTLE YARD</small><strong id="yard-title">우리네 작은 집</strong></div>
+            <button type="button" data-open-memories>기록 보기</button>
+          </div>
+
+          <div class="yard-scene" id="yard-scene">
+            <div class="sun" aria-hidden="true"></div>
+            <div class="cloud cloud-one" aria-hidden="true"></div>
+            <div class="cloud cloud-two" aria-hidden="true"></div>
+            <div class="far-hill hill-one" aria-hidden="true"></div>
+            <div class="far-hill hill-two" aria-hidden="true"></div>
+            <div class="lawn" aria-hidden="true"></div>
+            <div class="path" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+            <div class="house" id="house">
+              <span class="chimney" aria-hidden="true"></span>
+              <span class="roof" aria-hidden="true"></span>
+              <div class="facade">
+                <span class="house-sign">우리네 집</span>
+                <span class="window window-left" aria-hidden="true"><i></i></span>
+                <span class="window window-right" aria-hidden="true"><i></i></span>
+                <span class="doorway-glow" aria-hidden="true"></span>
+                <button class="house-door" id="house-door" type="button" aria-describedby="door-hint">
+                  <i></i><i></i><b></b>
+                  <span class="door-lock" id="door-lock">0 / 3일</span>
+                </button>
+              </div>
             </div>
-            <div class="care-actions" id="care-actions">
-              <button type="button" data-care="water"><span>💧</span><b>물 주기</b><small>수분 +18</small></button>
-              <button type="button" data-care="weed"><span>🌱</span><b>잡초 뽑기</b><small>건강 +15</small></button>
-              <button type="button" data-care="soil"><span>🪴</span><b>거름 주기</b><small>토양 +12</small></button>
-            </div>
-          </section>
 
-          <section class="achievement-card" aria-labelledby="achievement-title">
-            <header><div><p>TODAY'S ACHIEVEMENTS</p><h3 id="achievement-title">오늘의 성취목록</h3></div><b><i id="achievement-count">1</i> / 3</b></header>
-            <p>기록 3개를 채우면 농장 아이템을 선물로 받아요.</p>
-            <ol id="achievement-list"></ol>
-            <button id="add-achievement" type="button"><span>＋</span> 성취 하나 더 기록하기</button>
-            <div class="reward-preview" id="reward-preview">
-              <span id="reward-preview-icon">🎁</span><p><small>오늘의 완성 보상</small><b id="reward-preview-name">포도 수확 바구니</b></p><em id="reward-status">2개 더 기록하면 열려요</em>
-            </div>
-            <button class="claim-item" id="claim-item" type="button" disabled>완성 아이템 받기</button>
-          </section>
+            <div class="tree" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="flower-bed" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            <aside class="yard-mission-card">
+              <p>FRONT DOOR MISSION</p>
+              <strong id="yard-mission-title">아직 문이 잠겨 있어요.</strong>
+              <span id="yard-mission-copy">서로 다른 3일에 잘한 일을 기록해 주세요.</span>
+              <div id="yard-day-stamps"><i></i><i></i><i></i></div>
+            </aside>
+          </div>
+          <p class="door-hint" id="door-hint">현관문을 눌러 미션 상태를 확인해 보세요.</p>
+        </section>
 
-          <aside class="inventory-card" aria-labelledby="item-title">
-            <header><p>MY FARM ITEMS</p><h3 id="item-title">농장 아이템</h3></header>
-            <div class="equipped-item" id="equipped-item"><span>🧺</span><p><small>현재 장착</small><b>기본 수확 바구니</b><em>아이템을 모으면 농장이 더 풍성해져요.</em></p></div>
-            <div class="item-shelf" id="item-shelf"></div>
-          </aside>
+        <section class="interior-view" id="interior-view" aria-labelledby="interior-title" hidden>
+          <div class="scene-toolbar interior-toolbar">
+            <button id="back-to-yard" type="button"><span>←</span> 마당으로</button>
+            <div><small>MISSION COMPLETE</small><strong id="interior-title">우리네 집 거실</strong></div>
+            <button type="button" data-open-memories>기록 보기</button>
+          </div>
+          <div class="room-scene">
+            <div class="room-wall wall-back" aria-hidden="true"></div>
+            <div class="room-wall wall-left" aria-hidden="true"></div>
+            <div class="room-wall wall-right" aria-hidden="true"></div>
+            <div class="room-floor" aria-hidden="true"></div>
+            <div class="room-window" aria-label="창문 너머로 마당이 보여요"><i></i><b></b></div>
+            <div class="room-frame" aria-hidden="true"><span></span><i></i><i></i><i></i></div>
+            <div class="room-shelf" aria-hidden="true"><i></i><i></i><b></b></div>
+            <div class="sofa" aria-hidden="true"><span></span><span></span><i></i><b></b></div>
+            <div class="rug" aria-hidden="true"></div>
+            <div class="side-table" aria-hidden="true"><span></span><i></i></div>
+            <div class="floor-lamp" aria-hidden="true"><span></span><i></i><b></b></div>
+            <div class="room-plant" aria-hidden="true"><span></span><i></i><i></i><i></i></div>
+            <div class="open-door-edge" aria-hidden="true"></div>
+            <article class="interior-welcome">
+              <p>사흘의 기록으로 열린 공간</p>
+              <h2>어서 와요.<br />여기가 나의 거실이에요.</h2>
+              <span>앞으로 남기는 기록도 이 집에 차곡차곡 머물 거예요.</span>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <div class="memory-backdrop" id="memory-backdrop" aria-hidden="true">
+        <section class="memory-modal" role="dialog" aria-modal="true" aria-labelledby="memory-title">
+          <button class="modal-close" id="memory-close" type="button" aria-label="닫기">×</button>
+          <p class="eyebrow">MY LITTLE ARCHIVE</p>
+          <h2 id="memory-title">차곡차곡 모인<br /><em>나의 잘한 일</em></h2>
+          <div class="memory-list" id="memory-list"></div>
+        </section>
+      </div>
+
+      <div class="celebration" id="celebration" aria-hidden="true">
+        <div class="celebration-card">
+          <span class="celebration-key" aria-hidden="true">⌂</span>
+          <p>3일 기록 미션 완료</p>
+          <h2>사흘의 잘한 일이 모여<br />현관문이 열렸어요!</h2>
+          <span>마당에서 문을 눌러 거실로 들어가 보세요.</span>
         </div>
-      </section>
+      </div>
 
-      <section class="tycoon-zone" id="tycoon">
-        <header class="section-heading">
-          <div><p>VINEYARD TYCOON</p><h2>나의 포도밭을<br /><em>천천히 키워요.</em></h2></div>
-          <p class="section-intro">오늘의 작은 성취가 한 알의 포도가 되고,<br />모인 포도는 농장을 키우는 씨앗이 됩니다.</p>
-        </header>
-
-        <div class="tycoon-stats" aria-label="농장 현황">
-          <article><span class="stat-icon">🍇</span><p><small>현재 포도알</small><b><i id="stat-grapes">7</i> / 24</b></p></article>
-          <article><span class="stat-icon">📦</span><p><small>수확 창고</small><b><i id="crate-count">0</i> 상자</b></p></article>
-          <article><span class="stat-icon">🌿</span><p><small>농장 평판</small><b>새싹 농부 <i id="reputation-level">Lv. 1</i></b></p></article>
-          <article><span class="stat-icon">🪙</span><p><small>누적 수익</small><b><i id="total-earned">0</i> G</b></p></article>
-        </div>
-
-        <div class="management-grid">
-          <section class="fields-card" aria-labelledby="fields-title">
-            <header class="card-head"><div><p>MY VINEYARD</p><h3 id="fields-title">포도밭 관리</h3></div><span id="open-field-count">1 / 3 밭 운영 중</span></header>
-            <div class="field-list" id="field-list"></div>
-          </section>
-
-          <section class="market-card" aria-labelledby="market-title">
-            <header class="card-head"><div><p>VILLAGE MARKET</p><h3 id="market-title">오늘의 시세</h3></div><span class="market-open"><i></i> 영업 중</span></header>
-            <div class="price-board">
-              <div><span class="market-grapes" aria-hidden="true">●●<br />&nbsp;●</span><p><small>잘 익은 포도 1상자</small><strong><i id="market-price">420</i> G</strong></p></div>
-              <em id="market-trend">▲ 어제보다 8% 올랐어요</em>
-            </div>
-            <div class="sell-row"><p>내 창고 <b><i id="market-crates">0</i> 상자</b></p><button id="sell-crate" type="button">1상자 출하하기 <span>＋420 G</span></button></div>
-            <p class="market-tip">TIP · 시세는 수확할 때마다 조금씩 달라져요.</p>
-          </section>
-        </div>
-
-        <div class="journal-grid">
-          <section class="journal-card" aria-labelledby="journal-title">
-            <header class="card-head"><div><p>HARVEST JOURNAL</p><h3 id="journal-title">최근 수확 일지</h3></div><button id="clear-journal" type="button">일지 정리</button></header>
-            <ol id="journal-list"></ol>
-          </section>
-          <aside class="next-goal-card">
-            <span>다음 목표</span><h3>포도 상자 첫 출하</h3><p>한 송이를 모두 채우면 첫 상자가 완성돼요.</p>
-            <div><i id="goal-bar"></i></div><small><b id="goal-progress">7 / 24알</b><em>보상 +420 G</em></small>
-          </aside>
-        </div>
-      </section>
-      <footer><p>오늘도 한 알만큼 자랐어요.</p><span>포도일기 농장 · MY GRAPE JOURNAL</span></footer>
-    </main>
-    <div class="modal-backdrop" id="harvest-modal" aria-hidden="true">
-      <section class="harvest-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <button class="modal-close" id="close-modal" type="button" aria-label="닫기">×</button>
-        <p class="modal-kicker">TODAY'S LITTLE WIN</p>
-        <h2 id="modal-title">오늘은 어떤 일을<br /><em>잘 해냈나요?</em></h2>
-        <p class="modal-copy">크고 대단하지 않아도 좋아요. 한 줄을 남기면 포도 한 알이 익어요.</p>
-        <label for="achievement-input">오늘의 작은 성취</label>
-        <input id="achievement-input" maxlength="50" placeholder="예: 미뤄둔 답장을 보냈다" autocomplete="off" />
-        <div class="quick-notes" aria-label="빠른 문장 선택">
-          <button type="button">10분 산책을 했다</button><button type="button">물을 충분히 마셨다</button><button type="button">할 일을 하나 끝냈다</button>
-        </div>
-        <button class="modal-harvest" id="confirm-harvest" type="button"><span>🍇</span><b>포도 한 알 수확하기</b></button>
-      </section>
+      <p class="toast" id="toast" role="status" aria-live="polite"></p>
+      <button class="install-app" id="install-app" type="button" hidden>홈 화면에 두기</button>
     </div>
-    <div class="level-modal-backdrop" id="level-modal" aria-hidden="true">
-      <section class="level-modal" role="dialog" aria-modal="true" aria-labelledby="level-title"><span>📦</span><p>HARVEST COMPLETE</p><h2 id="level-title">포도 한 상자<br />포장을 마쳤어요!</h2><small>수확 창고에 상자 1개가 들어왔어요.<br />마을 상점에서 좋은 값에 팔아 보세요.</small><button id="close-level" type="button">창고 확인하기</button></section>
-    </div>
-    <div class="item-modal-backdrop" id="item-modal" aria-hidden="true">
-      <section class="item-modal" role="dialog" aria-modal="true" aria-labelledby="item-reward-title">
-        <div class="item-burst" aria-hidden="true">✦</div><span id="item-reward-icon">🧺</span><p>ACHIEVEMENT REWARD</p>
-        <h2 id="item-reward-title">새 농장 아이템을<br />받았어요!</h2>
-        <strong id="item-reward-name">포도 수확 바구니</strong><small id="item-reward-copy">정성껏 모은 포도를 안전하게 담아줘요.</small>
-        <button id="close-item-reward" type="button">농장에 놓아보기</button>
-      </section>
-    </div>
-    <div class="toast" id="toast" role="status" aria-live="polite">포도 한 알이 톡! 열렸어요 🍇</div>
-    <script type="module" src="./main.js?v=120"></script>
+    <script type="module" src="./main.js?v=300"></script>
   </body>
 </html>
